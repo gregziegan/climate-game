@@ -1,0 +1,12 @@
+name: Deploy
+jobs:
+  - name: Build site
+    steps:
+      - uses: @actions/checkout
+      - uses: jorelali/setup-elm@v2
+        with:
+          elm-version: 0.19.1
+      - run: elm install -Y
+        name: Install dependencies
+      - run: elm make --optimize src/Main.elm
+        name: Build application
