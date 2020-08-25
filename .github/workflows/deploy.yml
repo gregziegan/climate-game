@@ -1,12 +1,24 @@
 name: Deploy
+on: push
 jobs:
-  - name: Build site
+  build-site:
+    runs-on: ubuntu-latest
+    name: Build site
     steps:
-      - uses: @actions/checkout
+      - uses: actions/checkout@v2
       - uses: jorelali/setup-elm@v2
         with:
           elm-version: 0.19.1
       - run: elm install -Y
         name: Install dependencies
-      - run: elm make --optimize src/Main.elm
+      - run: elm make --optimize --output=docs/index.html src/Main.elm
         name: Build application
+      - run: |
+          set -ex -o pipefail
+
+          git config user.name "Release Bot"
+          git config user.email "not.real@gmail.com"
+          git add -f docs
+          git commit -m "Build application for $GITHUB_SHA"
+
+          git push --force origin "HEAD:refs/heads/release"
