@@ -37,6 +37,7 @@ jobs:
 
           git config user.name "Release Bot"
           git config user.email "not.real@gmail.com"
+          cp -r src/public/ docs/public
           git add -f docs
           git commit -m "Build application for $GITHUB_SHA"
 
