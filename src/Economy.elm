@@ -1,4 +1,4 @@
-module Economy exposing (Economy, Score, Service, init, provide)
+module Economy exposing (Economy, Score, Service, idealScore, init, provide, totalScore)
 
 import Person exposing (Person)
 
@@ -12,6 +12,8 @@ type alias Economy =
     , kitchens : Int
     , livingRooms : Int
     , extraRooms : Int
+    , food : Int
+    , clothing : Int
     }
 
 
@@ -21,32 +23,48 @@ type alias Score =
     }
 
 
+type alias Service =
+    { score : Score
+    , economy : Economy
+    , person : Person
+    }
+
+
+idealScore : Score
+idealScore =
+    { happiness = 1.0, health = 1.0 }
+
+
 init : Economy
 init =
-    { hospitalBeds = 100
+    { hospitalBeds = 10
     , surgeons = 10
     , prescriptionDrugs = 10
-    , bedrooms = 1000
-    , bathrooms = 1200
-    , kitchens = 1000
-    , livingRooms = 1000
-    , extraRooms = 200
+    , bedrooms = 10
+    , bathrooms = 12
+    , kitchens = 10
+    , livingRooms = 10
+    , extraRooms = 2
+    , food = 10
+    , clothing = 10
     }
 
 
 healthModifiers =
-    { surgery = 1.0
-    , prescription = 1.0
-    , hospitalization = 0.75
+    { food = 0
+    , clothing = 0.5
+    , surgery = 0
+    , prescription = 0
+    , hospitalization = 0.25
     }
 
 
 housingModifiers =
-    { bedroom = 1
-    , bathroom = 1
+    { bedroom = 0
+    , bathroom = 0
     , kitchen = 0.8
     , livingRoom = 0.3
-    , flexRoomScore = 0.1
+    , flexRoomScore = 0.9
     }
 
 
@@ -55,13 +73,6 @@ transitModifiers =
     , biking = 0.75
     , car = 0.3
     , train = 0.8
-    }
-
-
-type alias Service =
-    { score : Score
-    , economy : Economy
-    , person : Person
     }
 
 
@@ -90,13 +101,67 @@ hospitalize person economy =
                 0
     in
     ( { economy | hospitalBeds = economy.hospitalBeds - bedsNeeded }
-    , { person | needsHospitalization = (bedsNeeded - economy.hospitalBeds) > 0 }
+    , { person | needsHospitalization = (bedsNeeded - economy.hospitalBeds) >= 0 }
     )
 
 
-provideRoom : Economy -> Economy
-provideRoom economy =
+provideBedroom : Economy -> Economy
+provideBedroom economy =
     { economy | bedrooms = economy.bedrooms - 1 }
+
+
+provideBathroom : Economy -> Economy
+provideBathroom economy =
+    { economy | bathrooms = economy.bathrooms - 1 }
+
+
+provideKitchen : Economy -> Economy
+provideKitchen economy =
+    { economy | kitchens = economy.kitchens - 1 }
+
+
+provideFood : Economy -> Economy
+provideFood economy =
+    { economy | food = economy.food - 1 }
+
+
+foodScore : Service -> Service
+foodScore ({ score, economy } as service) =
+    let
+        updatedEconomy =
+            provideFood economy
+    in
+    { service
+        | economy = updatedEconomy
+        , score =
+            if updatedEconomy.food >= 0 then
+                score
+
+            else
+                { score | health = healthModifiers.food * score.health }
+    }
+
+
+provideClothes : Economy -> Economy
+provideClothes economy =
+    { economy | clothing = economy.clothing - 1 }
+
+
+clothingScore : Service -> Service
+clothingScore ({ score, economy } as service) =
+    let
+        updatedEconomy =
+            provideClothes economy
+    in
+    { service
+        | economy = updatedEconomy
+        , score =
+            if updatedEconomy.clothing >= 0 then
+                score
+
+            else
+                { score | health = healthModifiers.clothing * score.health }
+    }
 
 
 prescriptionScore : Service -> Service
@@ -153,11 +218,11 @@ hospitalizationScore ({ person, score, economy } as service) =
     }
 
 
-neededRoomScore : Service -> Service
-neededRoomScore ({ score, economy } as service) =
+bedroomScore : Service -> Service
+bedroomScore ({ score, economy } as service) =
     let
         updatedEconomy =
-            provideRoom economy
+            provideBedroom economy
     in
     { service
         | economy = updatedEconomy
@@ -166,21 +231,86 @@ neededRoomScore ({ score, economy } as service) =
                 score
 
             else
-                { score | happiness = housingModifiers.bedroom * score.happiness }
+                { score | health = housingModifiers.bedroom * score.health }
+    }
+
+
+bathroomScore : Service -> Service
+bathroomScore ({ score, economy } as service) =
+    let
+        updatedEconomy =
+            provideBathroom economy
+    in
+    { service
+        | economy = updatedEconomy
+        , score =
+            if updatedEconomy.bathrooms >= 0 then
+                score
+
+            else
+                { score | health = housingModifiers.bathroom * score.health }
+    }
+
+
+kitchenScore : Service -> Service
+kitchenScore ({ score, economy } as service) =
+    let
+        updatedEconomy =
+            provideKitchen economy
+    in
+    { service
+        | economy = updatedEconomy
+        , score =
+            if updatedEconomy.kitchens >= 0 then
+                score
+
+            else
+                { score | health = housingModifiers.kitchen * score.health }
     }
 
 
 provide : Person -> Economy -> Service
 provide person economy =
     let
-        score =
-            { happiness = 1.0, health = 1.0 }
-
         service =
-            { score = score, economy = economy, person = person }
+            { score = idealScore, economy = economy, person = person }
     in
     service
+        |> foodScore
+        |> clothingScore
         |> prescriptionScore
         |> surgeryScore
         |> hospitalizationScore
-        |> neededRoomScore
+        |> bedroomScore
+        |> bathroomScore
+        |> kitchenScore
+
+
+toTuple : Score -> ( Float, Float )
+toTuple { happiness, health } =
+    ( happiness, health )
+
+
+totalScore : List Person -> Economy -> Score
+totalScore population economy =
+    let
+        provideHelp person serviced =
+            let
+                currentEconomy =
+                    Maybe.map .economy (List.head serviced) |> Maybe.withDefault economy
+
+                service =
+                    provide person currentEconomy
+            in
+            service :: serviced
+
+        services =
+            List.foldl provideHelp [] population
+
+        ( happiness, health ) =
+            List.unzip (List.map (toTuple << .score) services)
+
+        popSize =
+            toFloat (List.length population)
+    in
+    { happiness = List.sum happiness / popSize, health = List.sum health / popSize }

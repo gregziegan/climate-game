@@ -71,5 +71,5 @@ average =
     -- needs
     , prescriptionsNeeded = 1
     , surgeriesNeeded = 0
-    , needsHospitalization = True
+    , needsHospitalization = False
     }

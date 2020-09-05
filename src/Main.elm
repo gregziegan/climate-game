@@ -3,8 +3,13 @@ module Main exposing (main)
 import Browser
 import Dict exposing (Dict)
 import Economy exposing (Economy, Score, Service)
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Element exposing (Color, Element, alignRight, alignTop, centerX, centerY, column, el, fill, fillPortion, height, html, image, padding, paragraph, px, rgb255, row, spacing, text, textColumn, width)
+import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
+import Element.Input exposing (button)
+import Element.Region exposing (heading)
+import Html exposing (Html)
 import Html.Events exposing (onClick)
 import List
 import NarrativeEngine.Core.Rules as Rules
@@ -54,14 +59,14 @@ type alias NamedComponent a =
 {-| Our concrete entity which extends the narrative engine's component with our own
 set of components.
 -}
-type alias MyEntity =
+type alias Entity =
     WorldModel.NarrativeComponent ExtraFields
 
 
 {-| Our concrete world model using our extended entities.
 -}
 type alias MyWorldModel =
-    Dict WorldModel.ID MyEntity
+    Dict WorldModel.ID Entity
 
 
 {-| A simple helper that makes it easy to define entities using the entity syntax in
@@ -253,7 +258,7 @@ initialModel initialWorldModel =
     { worldModel = initialWorldModel
     , story = "You're a democratically elected president: do the work to give your people happy and healthy lives."
     , ruleCounts = Dict.empty
-    , population = [ Person.average ]
+    , population = List.repeat 10 Person.average
     , economy = Economy.init
     , debug = NarrativeEngine.Debug.init
     }
@@ -266,7 +271,7 @@ initialModel initialWorldModel =
 -- at call time since it depends on the state at that time).
 
 
-getDescription : NarrativeParser.Config MyEntity -> WorldModel.ID -> MyWorldModel -> String
+getDescription : NarrativeParser.Config Entity -> WorldModel.ID -> MyWorldModel -> String
 getDescription config entityID worldModel_ =
     Dict.get entityID worldModel_
         |> Maybe.map .description
@@ -293,7 +298,7 @@ here. In this case we always return an `Ok`, but it is better to return an `Err
 "reason..."` if the function fails, to display better parsing errors.
 
 -}
-makeConfig : WorldModel.ID -> Rules.RuleID -> Model -> NarrativeParser.Config MyEntity
+makeConfig : WorldModel.ID -> Rules.RuleID -> Model -> NarrativeParser.Config Entity
 makeConfig trigger matchedRule model =
     { cycleIndex = Dict.get matchedRule model.ruleCounts |> Maybe.withDefault 0
     , propKeywords = Dict.singleton "name" (\id -> Ok <| getName id model.worldModel)
@@ -309,6 +314,7 @@ if desired, and handle them in `update`.
 type Msg
     = InteractWith WorldModel.ID
     | UpdateDebugSearchText String
+    | HarvestFood
 
 
 {-| We update our game whenever the player clicks on an entity. We need to check if
@@ -320,7 +326,7 @@ The fully parsed `Rules` get passed in from `main`.
 
 -}
 update : Rules -> Msg -> Model -> Model
-update rules msg model =
+update rules msg ({ economy } as model) =
     case msg of
         InteractWith trigger ->
             -- we need to check if any rule matched
@@ -361,11 +367,14 @@ update rules msg model =
         UpdateDebugSearchText searchText ->
             { model | debug = NarrativeEngine.Debug.updateSearch searchText model.debug }
 
+        HarvestFood ->
+            { model | economy = { economy | food = economy.food + 1 } }
+
 
 {-| A helper to make queries from a query syntax string. Make sure the syntax is
 correct or this defaults to an empty list.
 -}
-query : String -> MyWorldModel -> List ( WorldModel.ID, MyEntity )
+query : String -> MyWorldModel -> List ( WorldModel.ID, Entity )
 query q worldModel =
     RuleParser.parseMatcher q
         |> Result.map (\parsedMatcher -> WorldModel.query parsedMatcher worldModel)
@@ -380,33 +389,56 @@ assert q worldModel =
     not <| List.isEmpty <| query q worldModel
 
 
-sumScore : Score -> Float
-sumScore score =
-    score.health + score.happiness
+clickerEarth : Model -> Element Msg
+clickerEarth model =
+    button [ width (px 100), height (px 100), Background.image "../docs/public/earth.svg" ]
+        { onPress = Just HarvestFood, label = text "" }
 
 
-totalScore : Model -> Float
-totalScore model =
-    let
-        provide : Person -> List Service -> List Service
-        provide person serviced =
-            let
-                economy =
-                    Maybe.map .economy (List.head serviced) |> Maybe.withDefault model.economy
-
-                service =
-                    Economy.provide person economy
-            in
-            service :: serviced
-
-        services =
-            List.foldl provide [] model.population
-    in
-    List.sum (List.map (sumScore << .score) services) / toFloat (List.length model.population)
+farmer : Int -> Element Msg
+farmer id =
+    image [ width (px 32), height (px 64) ] { src = "../docs/public/farmer" ++ String.fromInt id ++ ".png", description = "An 8-bit representation of a farmer." }
 
 
-view : Model -> Html Msg
-view model =
+farmers : Model -> Element Msg
+farmers model =
+    row [] (List.map farmer <| List.range 0 2)
+
+
+clickerEconomy : Model -> Element Msg
+clickerEconomy model =
+    column [ width fill ]
+        [ farmers model
+        ]
+
+
+trainFarmer : Model -> Element Msg
+trainFarmer model =
+    button [] { onPress = Nothing, label = text "Train a farmer to produce food!" }
+
+
+clickerStore : Model -> Element Msg
+clickerStore model =
+    column [ width fill ]
+        [ trainFarmer model ]
+
+
+clickerGame : Model -> Element Msg
+clickerGame model =
+    row [ width fill, centerY, spacing 30, padding 10 ]
+        [ clickerEarth model
+        , clickerEconomy model
+        , clickerStore model
+        ]
+
+
+viewEntities : List ( WorldModel.ID, Entity ) -> Element Msg
+viewEntities entities =
+    column [ padding 10 ] (List.map viewEntity entities)
+
+
+choiceColumn : Model -> Element Msg
+choiceColumn model =
     let
         -- we can get links and stats directly
         currentLocation =
@@ -423,31 +455,68 @@ view model =
         characters =
             query "*.character.current_location=(link PLAYER.current_location)" model.worldModel
     in
-    div [ style "width" "70%", style "margin" "auto" ]
-        [ NarrativeEngine.Debug.debugBar UpdateDebugSearchText model.worldModel model.debug
-        , h1 [] [ text <| "You are currently located in the " ++ getName currentLocation model.worldModel ]
-        , h2 [] [ text <| getDescription (makeConfig currentLocation currentLocation model) currentLocation model.worldModel ]
-        , div [ style "display" "flex" ]
-            [ div [ style "flex" "0 0 auto" ]
-                [ h3 [] [ text "Choices:" ]
-                , ul [] <| List.map entityView choices
-                , h3 [] [ text "People in the room:" ]
-                , ul [] <| List.map entityView characters
-                , h3 [] [ text "Places you can go:" ]
-                , ul [] <| List.map entityView locations
-                , h3 [] [ text "Current score:" ]
-                , p [] [ text (String.fromFloat (totalScore model)) ]
+    column [ spacing 5, Border.width 2, padding 5, Border.rounded 3, Border.color (rgb255 0 0 255) ]
+        (List.concat
+            [ if List.isEmpty choices then
+                []
+
+              else
+                [ paragraph [ heading 3 ] [ text "Choices:" ]
+                , viewEntities choices
                 ]
-            , div [ style "flex" "1 1 auto", style "font-size" "2em", style "padding" "0 2em" ]
-                [ em [] [ text model.story ]
+            , if List.isEmpty characters then
+                []
+
+              else
+                [ paragraph [ heading 3 ] [ text "People in the room:" ]
+                , viewEntities characters
                 ]
+            , if List.isEmpty locations then
+                []
+
+              else
+                [ paragraph [ heading 3 ] [ text "Places you can go:" ]
+                , viewEntities locations
+                ]
+            , [ paragraph [ heading 3 ] [ text "Current score:" ]
+              , paragraph [] [ text (String.fromFloat (Economy.totalScore model.population model.economy)) ]
+              ]
             ]
+        )
+
+
+storyColumn : Model -> Element Msg
+storyColumn model =
+    textColumn [ padding 10, alignTop ]
+        [ paragraph [] [ text model.story ]
         ]
 
 
-entityView : ( WorldModel.ID, MyEntity ) -> Html Msg
-entityView ( id, { name } ) =
-    li [ onClick <| InteractWith id, style "cursor" "pointer" ] [ text name ]
+view : Model -> Html Msg
+view model =
+    let
+        -- we can get links and stats directly
+        currentLocation =
+            WorldModel.getLink "PLAYER" "current_location" model.worldModel
+                |> Maybe.withDefault "ERROR getting current location"
+    in
+    Element.layout [ centerX, width (fillPortion 3) ]
+        (column [ spacing 10 ]
+            [ html (NarrativeEngine.Debug.debugBar UpdateDebugSearchText model.worldModel model.debug)
+            , paragraph [ heading 1 ] [ text ("You are currently located in the " ++ getName currentLocation model.worldModel) ]
+            , paragraph [ heading 2 ] [ text <| getDescription (makeConfig currentLocation currentLocation model) currentLocation model.worldModel ]
+            , row [ spacing 10 ]
+                [ choiceColumn model
+                , storyColumn model
+                ]
+            , clickerGame model
+            ]
+        )
+
+
+viewEntity : ( WorldModel.ID, Entity ) -> Element Msg
+viewEntity ( id, { name } ) =
+    button [] { onPress = Just (InteractWith id), label = text name }
 
 
 main : Program () Model Msg
