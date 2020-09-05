@@ -11,6 +11,11 @@ jobs:
       - uses: jorelali/setup-elm@v2
         with:
           elm-version: 0.19.1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "10.x"
+      - run: npm install -g elm-test
+        name: Install test framework
       - run: elm-test
         name: Test application
   deploy:
