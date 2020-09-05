@@ -391,13 +391,13 @@ assert q worldModel =
 
 clickerEarth : Model -> Element Msg
 clickerEarth model =
-    button [ width (px 100), height (px 100), Background.image "../docs/public/earth.svg" ]
+    button [ width (px 100), height (px 100), Background.image "./docs/public/earth.svg" ]
         { onPress = Just HarvestFood, label = text "" }
 
 
 farmer : Int -> Element Msg
 farmer id =
-    image [ width (px 32), height (px 64) ] { src = "../docs/public/farmer" ++ String.fromInt id ++ ".png", description = "An 8-bit representation of a farmer." }
+    image [ width (px 32), height (px 64) ] { src = "./docs/public/farmer" ++ String.fromInt id ++ ".png", description = "An 8-bit representation of a farmer." }
 
 
 farmers : Model -> Element Msg
