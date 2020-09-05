@@ -437,6 +437,11 @@ viewEntities entities =
     column [ padding 10 ] (List.map viewEntity entities)
 
 
+percent : Float -> String
+percent num =
+    String.fromFloat (num * 100) ++ "%"
+
+
 choiceColumn : Model -> Element Msg
 choiceColumn model =
     let
@@ -454,6 +459,9 @@ choiceColumn model =
 
         characters =
             query "*.character.current_location=(link PLAYER.current_location)" model.worldModel
+
+        score =
+            Economy.totalScore model.population model.economy
     in
     column [ spacing 5, Border.width 2, padding 5, Border.rounded 3, Border.color (rgb255 0 0 255) ]
         (List.concat
@@ -478,8 +486,9 @@ choiceColumn model =
                 [ paragraph [ heading 3 ] [ text "Places you can go:" ]
                 , viewEntities locations
                 ]
-            , [ paragraph [ heading 3 ] [ text "Current score:" ]
-              , paragraph [] [ text (String.fromFloat (Economy.totalScore model.population model.economy)) ]
+            , [ paragraph [ heading 3 ] [ text "Score:" ]
+              , paragraph [] [ text (percent score.happiness ++ " of your citizens are happy") ]
+              , paragraph [] [ text (percent score.health ++ " of your citizens are healthy") ]
               ]
             ]
         )
