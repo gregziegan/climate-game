@@ -6,11 +6,9 @@ import Economy exposing (Economy, Score, Service)
 import Element exposing (Color, Element, alignRight, alignTop, centerX, centerY, column, el, fill, fillPortion, height, html, image, padding, paragraph, px, rgb255, row, spacing, text, textColumn, width)
 import Element.Background as Background
 import Element.Border as Border
-import Element.Font as Font
 import Element.Input exposing (button)
 import Element.Region exposing (heading)
 import Html exposing (Html)
-import Html.Events exposing (onClick)
 import List
 import NarrativeEngine.Core.Rules as Rules
 import NarrativeEngine.Core.WorldModel as WorldModel
@@ -20,6 +18,7 @@ import NarrativeEngine.Syntax.Helpers as SyntaxHelpers
 import NarrativeEngine.Syntax.NarrativeParser as NarrativeParser
 import NarrativeEngine.Syntax.RuleParser as RuleParser
 import Person exposing (Person)
+import Time
 
 
 
@@ -253,15 +252,17 @@ type alias Model =
 
 {-| This gets called from `main` with the fully parsed initial world model passed in.
 -}
-initialModel : MyWorldModel -> Model
+initialModel : MyWorldModel -> ( Model, Cmd Msg )
 initialModel initialWorldModel =
-    { worldModel = initialWorldModel
-    , story = "You're a democratically elected president: do the work to give your people happy and healthy lives."
-    , ruleCounts = Dict.empty
-    , population = List.repeat 10 Person.average
-    , economy = Economy.init
-    , debug = NarrativeEngine.Debug.init
-    }
+    ( { worldModel = initialWorldModel
+      , story = "You're a democratically elected president: do the work to give your people happy and healthy lives."
+      , ruleCounts = Dict.empty
+      , population = List.repeat 10 Person.average
+      , economy = Economy.init
+      , debug = NarrativeEngine.Debug.init
+      }
+    , Cmd.none
+    )
 
 
 
@@ -314,6 +315,7 @@ if desired, and handle them in `update`.
 type Msg
     = InteractWith WorldModel.ID
     | UpdateDebugSearchText String
+    | Tick
     | HarvestFood
 
 
@@ -325,14 +327,14 @@ narrative syntax).
 The fully parsed `Rules` get passed in from `main`.
 
 -}
-update : Rules -> Msg -> Model -> Model
+update : Rules -> Msg -> Model -> ( Model, Cmd Msg )
 update rules msg ({ economy } as model) =
     case msg of
         InteractWith trigger ->
             -- we need to check if any rule matched
             case Rules.findMatchingRule trigger rules model.worldModel of
                 Just ( matchedRuleID, { changes } ) ->
-                    { model
+                    ( { model
                         | worldModel = WorldModel.applyChanges changes trigger model.worldModel
                         , story =
                             -- get the story from narrative content (we also need to
@@ -350,25 +352,32 @@ update rules msg ({ economy } as model) =
                             model.debug
                                 |> NarrativeEngine.Debug.setLastMatchedRuleId matchedRuleID
                                 |> NarrativeEngine.Debug.setLastInteractionId trigger
-                    }
+                      }
+                    , Cmd.none
+                    )
 
                 Nothing ->
                     -- no rule matched, so lets just show the description of the
                     -- entity that the player interacted with
-                    { model
+                    ( { model
                         | story = getDescription (makeConfig trigger trigger model) trigger model.worldModel
                         , ruleCounts = Dict.update trigger (Maybe.map ((+) 1) >> Maybe.withDefault 1 >> Just) model.ruleCounts
                         , debug =
                             model.debug
                                 |> NarrativeEngine.Debug.setLastMatchedRuleId trigger
                                 |> NarrativeEngine.Debug.setLastInteractionId trigger
-                    }
+                      }
+                    , Cmd.none
+                    )
 
         UpdateDebugSearchText searchText ->
-            { model | debug = NarrativeEngine.Debug.updateSearch searchText model.debug }
+            ( { model | debug = NarrativeEngine.Debug.updateSearch searchText model.debug }, Cmd.none )
 
         HarvestFood ->
-            { model | economy = { economy | food = economy.food + 1 } }
+            ( { model | economy = { economy | food = economy.food + 1 } }, Cmd.none )
+
+        Tick ->
+            ( { model | population = Person.average :: model.population }, Cmd.none )
 
 
 {-| A helper to make queries from a query syntax string. Make sure the syntax is
@@ -439,7 +448,7 @@ viewEntities entities =
 
 percent : Float -> String
 percent num =
-    String.fromFloat (num * 100) ++ "%"
+    String.fromInt (round (num * 100)) ++ "%"
 
 
 choiceColumn : Model -> Element Msg
@@ -528,6 +537,17 @@ viewEntity ( id, { name } ) =
     button [] { onPress = Just (InteractWith id), label = text name }
 
 
+second =
+    1000
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Time.every (5 * second) (\_ -> Tick)
+        ]
+
+
 main : Program () Model Msg
 main =
     let
@@ -548,23 +568,30 @@ main =
                 (NarrativeParser.parseMany narrative_content)
                 (RuleParser.parseRules addExtraRuleFields rulesSpec)
     in
-    Browser.sandbox
+    Browser.document
         { init =
-            parsedData
-                |> Result.map Tuple.first
-                |> Result.withDefault Dict.empty
-                |> initialModel
+            \_ ->
+                parsedData
+                    |> Result.map Tuple.first
+                    |> Result.withDefault Dict.empty
+                    |> initialModel
         , view =
-            case parsedData of
-                Ok _ ->
-                    view
+            \model ->
+                { title = "Leader Game"
+                , body =
+                    [ case parsedData of
+                        Ok _ ->
+                            view model
 
-                Err errors ->
-                    -- Just show the errors, model is ignored
-                    \_ -> SyntaxHelpers.parseErrorsView errors
+                        Err errors ->
+                            -- Just show the errors, model is ignored
+                            SyntaxHelpers.parseErrorsView errors
+                    ]
+                }
         , update =
             parsedData
                 |> Result.map Tuple.second
                 |> Result.withDefault Dict.empty
                 |> update
+        , subscriptions = subscriptions
         }

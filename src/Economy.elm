@@ -277,13 +277,16 @@ provide person economy =
     in
     service
         |> foodScore
-        |> clothingScore
-        |> prescriptionScore
-        |> surgeryScore
-        |> hospitalizationScore
-        |> bedroomScore
-        |> bathroomScore
-        |> kitchenScore
+
+
+
+-- |> clothingScore
+-- |> prescriptionScore
+-- |> surgeryScore
+-- |> hospitalizationScore
+-- |> bedroomScore
+-- |> bathroomScore
+-- |> kitchenScore
 
 
 toTuple : Score -> ( Float, Float )
