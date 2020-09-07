@@ -1,0 +1,2 @@
+cp -r src/public/ docs/public
+elm make --debug --output=./docs/index.html src/Main.elm

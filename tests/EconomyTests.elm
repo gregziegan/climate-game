@@ -1,6 +1,6 @@
 module EconomyTests exposing (..)
 
-import Economy exposing (Economy, Score)
+import Economy exposing (Economy)
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Person exposing (Person)
@@ -24,13 +24,13 @@ suite =
                 \_ ->
                     let
                         person =
-                            Person.average
+                            Person.average 1
 
                         economy =
                             Economy.init
 
                         expectedService =
-                            { score = Economy.idealScore
+                            { stats = Economy.idealStats
                             , economy =
                                 { economy
                                     | food = economy.food - 1
@@ -47,32 +47,38 @@ suite =
                     in
                     Expect.equal expectedService (Economy.provide person economy)
             ]
-        , describe "Economy.totalScore"
-            [ test "returns ideal score for a satisfied population" <|
+        , describe "Economy.produce"
+            [ test "returns ideal happiness and healthiness for a satisfied population" <|
                 \_ ->
                     let
                         population =
-                            List.repeat 10 Person.average
+                            List.map Person.average (List.range 0 9)
 
                         economy =
                             Economy.init
+
+                        expected =
+                            { happiness = 1, health = 1 }
+
+                        product =
+                            Economy.produce population economy
                     in
-                    Expect.equal Economy.idealScore (Economy.totalScore population economy)
+                    Expect.equal expected { happiness = product.avgHappiness, health = product.avgHealth }
             , test "returns half the ideal score for a half-served population" <|
                 \_ ->
                     let
                         population =
-                            List.repeat 20 Person.average
+                            List.map Person.average (List.range 0 19)
 
                         economy =
                             Economy.init
 
-                        ideal =
-                            Economy.idealScore
+                        expected =
+                            { happiness = 1, health = 0.5 }
 
-                        expectedScore =
-                            { ideal | health = 0.5 }
+                        product =
+                            Economy.produce population economy
                     in
-                    Expect.equal expectedScore (Economy.totalScore population economy)
+                    Expect.equal expected { happiness = product.avgHappiness, health = product.avgHealth }
             ]
         ]

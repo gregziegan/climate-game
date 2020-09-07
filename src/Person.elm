@@ -39,9 +39,10 @@ type TransitNeed
 
 
 type alias Person =
-    { name : String
+    { id : Int
+    , name : String
     , age : Int
-    , jobs : List Job
+    , job : Maybe Job
     , qualifications : List Qualification
 
     -- wants
@@ -56,11 +57,12 @@ type alias Person =
     }
 
 
-average : Person
-average =
-    { name = "Joe"
+average : Int -> Person
+average id =
+    { id = id
+    , name = "Joe"
     , age = 35
-    , jobs = []
+    , job = Nothing
     , qualifications = []
 
     -- wants

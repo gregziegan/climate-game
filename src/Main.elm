@@ -2,13 +2,15 @@ module Main exposing (main)
 
 import Browser
 import Dict exposing (Dict)
-import Economy exposing (Economy, Score, Service)
+import Economy exposing (Economy, Service, Stats)
 import Element exposing (Color, Element, alignRight, alignTop, centerX, centerY, column, el, fill, fillPortion, height, html, image, padding, paragraph, px, rgb255, row, spacing, text, textColumn, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Input exposing (button)
-import Element.Region exposing (heading)
+import Element.Region as Region exposing (heading)
 import Html exposing (Html)
+import Html.Attributes exposing (title)
+import Job exposing (Job, Title(..))
 import List
 import NarrativeEngine.Core.Rules as Rules
 import NarrativeEngine.Core.WorldModel as WorldModel
@@ -17,6 +19,7 @@ import NarrativeEngine.Syntax.EntityParser as EntityParser
 import NarrativeEngine.Syntax.Helpers as SyntaxHelpers
 import NarrativeEngine.Syntax.NarrativeParser as NarrativeParser
 import NarrativeEngine.Syntax.RuleParser as RuleParser
+import Palette
 import Person exposing (Person)
 import Time
 
@@ -246,6 +249,9 @@ type alias Model =
     , ruleCounts : Dict String Int
     , population : List Person
     , economy : Economy
+    , score : Float
+    , happiness : Float
+    , health : Float
     , debug : NarrativeEngine.Debug.State
     }
 
@@ -257,8 +263,11 @@ initialModel initialWorldModel =
     ( { worldModel = initialWorldModel
       , story = "You're a democratically elected president: do the work to give your people happy and healthy lives."
       , ruleCounts = Dict.empty
-      , population = List.repeat 10 Person.average
+      , population = List.map Person.average (List.range 0 10)
       , economy = Economy.init
+      , score = 0
+      , happiness = 1
+      , health = 1
       , debug = NarrativeEngine.Debug.init
       }
     , Cmd.none
@@ -315,8 +324,9 @@ if desired, and handle them in `update`.
 type Msg
     = InteractWith WorldModel.ID
     | UpdateDebugSearchText String
-    | Tick
+    | Tick Time.Posix
     | HarvestFood
+    | Train Job.Title
 
 
 {-| We update our game whenever the player clicks on an entity. We need to check if
@@ -376,8 +386,75 @@ update rules msg ({ economy } as model) =
         HarvestFood ->
             ( { model | economy = { economy | food = economy.food + 1 } }, Cmd.none )
 
-        Tick ->
-            ( { model | population = Person.average :: model.population }, Cmd.none )
+        Train title ->
+            ( { model | population = train title model.population }, Cmd.none )
+
+        Tick posixTime ->
+            let
+                product =
+                    model.economy
+                        |> workPopulation model.population
+                        |> Economy.produce model.population
+            in
+            ( { model
+                | population = Person.average (Time.posixToMillis posixTime) :: model.population
+                , economy = product.economy
+                , score = model.score + score product
+                , happiness = product.avgHappiness
+                , health = product.avgHealth
+              }
+            , Cmd.none
+            )
+
+
+score : Economy.Product -> Float
+score product =
+    (product.avgHappiness + product.avgHealth / 2) * 100
+
+
+workPerson : Economy -> Job -> Economy
+workPerson economy job =
+    case job.title of
+        Farmer ->
+            { economy | food = economy.food + 50 }
+
+        Doctor ->
+            { economy | surgeons = economy.surgeons + 1, prescriptionDrugs = economy.prescriptionDrugs + 1 }
+
+        Nurse ->
+            { economy | hospitalBeds = economy.hospitalBeds + 5, prescriptionDrugs = economy.prescriptionDrugs + 3 }
+
+        CivilEngineer ->
+            { economy | bedrooms = economy.bedrooms + 1, bathrooms = economy.bathrooms + 1, kitchens = economy.kitchens + 1 }
+
+        Programmer ->
+            economy
+
+        SocialWorker ->
+            { economy | prescriptionDrugs = economy.prescriptionDrugs + 2 }
+
+        Teacher ->
+            economy
+
+        Professor ->
+            economy
+
+        Carpenter ->
+            economy
+
+        Electrician ->
+            economy
+
+
+workPopulation : List Person -> Economy -> Economy
+workPopulation people economy =
+    List.foldl
+        (\person acc ->
+            Maybe.map (workPerson economy) person.job
+                |> Maybe.withDefault acc
+        )
+        economy
+        people
 
 
 {-| A helper to make queries from a query syntax string. Make sure the syntax is
@@ -398,38 +475,150 @@ assert q worldModel =
     not <| List.isEmpty <| query q worldModel
 
 
+trainHelp : Job.Title -> List Person -> List Person -> List Person
+trainHelp title newPop population =
+    case population of
+        [] ->
+            newPop
+
+        person :: rest ->
+            if person.job == Nothing then
+                List.append newPop ({ person | job = Just (Job.train title) } :: rest)
+
+            else
+                trainHelp title (person :: newPop) rest
+
+
+train : Title -> List Person -> List Person
+train title population =
+    trainHelp title [] population
+
+
+
+-- VIEW
+
+
 clickerEarth : Model -> Element Msg
 clickerEarth model =
     button [ width (px 100), height (px 100), Background.image "./public/earth.svg" ]
         { onPress = Just HarvestFood, label = text "" }
 
 
-farmer : Int -> Element Msg
-farmer id =
-    image [ width (px 32), height (px 64) ] { src = "./public/farmer" ++ String.fromInt id ++ ".png", description = "An 8-bit representation of a farmer." }
+farmer : Person -> Element Msg
+farmer person =
+    image [ width (px 32), height (px 64) ] { src = "./public/farmer" ++ String.fromInt (modBy 3 person.id) ++ ".png", description = "An 8-bit representation of a farmer." }
 
 
-farmers : Model -> Element Msg
-farmers model =
-    row [] (List.map farmer <| List.range 0 2)
+onlyForJob : Job.Title -> Person -> Maybe Person
+onlyForJob title person =
+    Maybe.andThen
+        (\job ->
+            if title == job.title then
+                Just person
+
+            else
+                Nothing
+        )
+        person.job
+
+
+doctor : Person -> Element Msg
+doctor person =
+    paragraph [ heading 2 ] [ text "D" ]
+
+
+nurse : Person -> Element Msg
+nurse person =
+    paragraph [ heading 2 ] [ text "N" ]
+
+
+civilEngineer : Person -> Element Msg
+civilEngineer person =
+    paragraph [ heading 2 ] [ text "C" ]
+
+
+socialWorker : Person -> Element Msg
+socialWorker person =
+    paragraph [ heading 2 ] [ text "S" ]
+
+
+viewWorker : Title -> (Person -> Element Msg)
+viewWorker title =
+    case title of
+        Farmer ->
+            farmer
+
+        Doctor ->
+            doctor
+
+        Nurse ->
+            nurse
+
+        CivilEngineer ->
+            civilEngineer
+
+        SocialWorker ->
+            socialWorker
+
+        _ ->
+            \_ -> Element.none
+
+
+viewWorkforce : List Person -> Title -> Element Msg
+viewWorkforce population title =
+    row []
+        (List.filterMap
+            (Maybe.map (viewWorker title) << onlyForJob title)
+            population
+        )
 
 
 clickerEconomy : Model -> Element Msg
 clickerEconomy model =
     column [ width fill ]
-        [ farmers model
-        ]
+        (List.map (viewWorkforce model.population)
+            [ Farmer
+            , Doctor
+            , Nurse
+            , CivilEngineer
+            , SocialWorker
+            ]
+        )
 
 
-trainFarmer : Model -> Element Msg
-trainFarmer model =
-    button [] { onPress = Nothing, label = text "Train a farmer to produce food!" }
+canTrain : List Person -> Bool
+canTrain population =
+    List.any (\person -> person.job == Nothing) population
 
 
-clickerStore : Model -> Element Msg
+trainButton : List Person -> Title -> Element Msg
+trainButton population title =
+    let
+        titleString =
+            Job.showTitle title
+    in
+    if canTrain population then
+        button [] { onPress = Just (Train title), label = text ("Train a " ++ titleString ++ " to produce food!") }
+
+    else
+        button
+            [ Background.color Palette.grey
+            , Region.description
+                "Someone without a job is must be available before training."
+            ]
+            { onPress = Nothing, label = text ("No prospective " ++ String.toLower titleString ++ " available") }
+
+
 clickerStore model =
-    column [ width fill ]
-        [ trainFarmer model ]
+    column [ width fill, spacing 20 ]
+        (List.map (trainButton model.population)
+            [ Farmer
+            , Doctor
+            , Nurse
+            , CivilEngineer
+            , SocialWorker
+            ]
+        )
 
 
 clickerGame : Model -> Element Msg
@@ -468,9 +657,6 @@ choiceColumn model =
 
         characters =
             query "*.character.current_location=(link PLAYER.current_location)" model.worldModel
-
-        score =
-            Economy.totalScore model.population model.economy
     in
     column [ spacing 5, Border.width 2, padding 5, Border.rounded 3, Border.color (rgb255 0 0 255) ]
         (List.concat
@@ -495,9 +681,11 @@ choiceColumn model =
                 [ paragraph [ heading 3 ] [ text "Places you can go:" ]
                 , viewEntities locations
                 ]
-            , [ paragraph [ heading 3 ] [ text "Score:" ]
-              , paragraph [] [ text (percent score.happiness ++ " of your citizens are happy") ]
-              , paragraph [] [ text (percent score.health ++ " of your citizens are healthy") ]
+            , [ paragraph [ heading 3 ] [ text "Statistics:" ]
+              , paragraph [] [ text (percent model.happiness ++ " of your citizens are happy") ]
+              , paragraph [] [ text (percent model.health ++ " of your citizens are healthy") ]
+              , paragraph [ heading 3 ] [ text "Score:" ]
+              , paragraph [] [ text (String.fromInt (round model.score)) ]
               ]
             ]
         )
@@ -508,6 +696,11 @@ storyColumn model =
     textColumn [ padding 10, alignTop ]
         [ paragraph [] [ text model.story ]
         ]
+
+
+economyStats : Economy -> Element Msg
+economyStats economy =
+    textColumn [] [ paragraph [] [ text ("Available Food: " ++ String.fromInt economy.food) ] ]
 
 
 view : Model -> Html Msg
@@ -528,6 +721,7 @@ view model =
                 , storyColumn model
                 ]
             , clickerGame model
+            , economyStats model.economy
             ]
         )
 
@@ -544,7 +738,7 @@ second =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Time.every (5 * second) (\_ -> Tick)
+        [ Time.every second Tick
         ]
 
 

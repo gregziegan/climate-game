@@ -1,37 +1,49 @@
-module Economy exposing (Economy, Score, Service, idealScore, init, provide, totalScore)
+module Economy exposing (Economy, Product, Service, Stats, idealStats, init, produce, provide)
 
 import Person exposing (Person)
 
 
 type alias Economy =
-    { hospitalBeds : Int
-    , surgeons : Int
-    , prescriptionDrugs : Int
-    , bedrooms : Int
+    { -- permanent
+      bedrooms : Int
     , bathrooms : Int
     , kitchens : Int
     , livingRooms : Int
     , extraRooms : Int
+    , hospitalBeds : Int
+
+    -- permanent (ish)
+    , surgeons : Int
+
+    -- ephemeral
     , food : Int
     , clothing : Int
+    , prescriptionDrugs : Int
     }
 
 
-type alias Score =
+type alias Stats =
     { happiness : Float
     , health : Float
     }
 
 
 type alias Service =
-    { score : Score
+    { stats : Stats
     , economy : Economy
     , person : Person
     }
 
 
-idealScore : Score
-idealScore =
+type alias Product =
+    { avgHappiness : Float
+    , avgHealth : Float
+    , economy : Economy
+    }
+
+
+idealStats : Stats
+idealStats =
     { happiness = 1.0, health = 1.0 }
 
 
@@ -64,7 +76,7 @@ housingModifiers =
     , bathroom = 0
     , kitchen = 0.8
     , livingRoom = 0.3
-    , flexRoomScore = 0.9
+    , flexRoomStats = 0.9
     }
 
 
@@ -125,20 +137,20 @@ provideFood economy =
     { economy | food = economy.food - 1 }
 
 
-foodScore : Service -> Service
-foodScore ({ score, economy } as service) =
+foodStats : Service -> Service
+foodStats ({ stats, economy } as service) =
     let
         updatedEconomy =
             provideFood economy
     in
     { service
         | economy = updatedEconomy
-        , score =
+        , stats =
             if updatedEconomy.food >= 0 then
-                score
+                stats
 
             else
-                { score | health = healthModifiers.food * score.health }
+                { stats | health = healthModifiers.food * stats.health }
     }
 
 
@@ -147,125 +159,125 @@ provideClothes economy =
     { economy | clothing = economy.clothing - 1 }
 
 
-clothingScore : Service -> Service
-clothingScore ({ score, economy } as service) =
+clothingStats : Service -> Service
+clothingStats ({ stats, economy } as service) =
     let
         updatedEconomy =
             provideClothes economy
     in
     { service
         | economy = updatedEconomy
-        , score =
+        , stats =
             if updatedEconomy.clothing >= 0 then
-                score
+                stats
 
             else
-                { score | health = healthModifiers.clothing * score.health }
+                { stats | health = healthModifiers.clothing * stats.health }
     }
 
 
-prescriptionScore : Service -> Service
-prescriptionScore ({ person, score, economy } as service) =
+prescriptionStats : Service -> Service
+prescriptionStats ({ person, stats, economy } as service) =
     let
         ( updatedEconomy, updatedPerson ) =
             provideDrugs person economy
     in
     { service
         | economy = updatedEconomy
-        , score =
+        , stats =
             if updatedPerson.prescriptionsNeeded >= 0 then
-                score
+                stats
 
             else
-                { score | health = healthModifiers.prescription * score.health }
+                { stats | health = healthModifiers.prescription * stats.health }
         , person = updatedPerson
     }
 
 
-surgeryScore : Service -> Service
-surgeryScore ({ person, score, economy } as service) =
+surgeryStats : Service -> Service
+surgeryStats ({ person, stats, economy } as service) =
     let
         ( updatedEconomy, updatedPerson ) =
             performSurgeries person economy
     in
     { service
         | economy = updatedEconomy
-        , score =
+        , stats =
             if updatedPerson.surgeriesNeeded >= 0 then
-                score
+                stats
 
             else
-                { score | health = healthModifiers.surgery * score.health }
+                { stats | health = healthModifiers.surgery * stats.health }
         , person = updatedPerson
     }
 
 
-hospitalizationScore : Service -> Service
-hospitalizationScore ({ person, score, economy } as service) =
+hospitalizationStats : Service -> Service
+hospitalizationStats ({ person, stats, economy } as service) =
     let
         ( updatedEconomy, updatedPerson ) =
             hospitalize person economy
     in
     { service
         | economy = updatedEconomy
-        , score =
+        , stats =
             if updatedPerson.needsHospitalization then
-                { score | health = healthModifiers.hospitalization * score.health }
+                { stats | health = healthModifiers.hospitalization * stats.health }
 
             else
-                score
+                stats
         , person = updatedPerson
     }
 
 
-bedroomScore : Service -> Service
-bedroomScore ({ score, economy } as service) =
+bedroomStats : Service -> Service
+bedroomStats ({ stats, economy } as service) =
     let
         updatedEconomy =
             provideBedroom economy
     in
     { service
         | economy = updatedEconomy
-        , score =
+        , stats =
             if updatedEconomy.bedrooms >= 0 then
-                score
+                stats
 
             else
-                { score | health = housingModifiers.bedroom * score.health }
+                { stats | health = housingModifiers.bedroom * stats.health }
     }
 
 
-bathroomScore : Service -> Service
-bathroomScore ({ score, economy } as service) =
+bathroomStats : Service -> Service
+bathroomStats ({ stats, economy } as service) =
     let
         updatedEconomy =
             provideBathroom economy
     in
     { service
         | economy = updatedEconomy
-        , score =
+        , stats =
             if updatedEconomy.bathrooms >= 0 then
-                score
+                stats
 
             else
-                { score | health = housingModifiers.bathroom * score.health }
+                { stats | health = housingModifiers.bathroom * stats.health }
     }
 
 
-kitchenScore : Service -> Service
-kitchenScore ({ score, economy } as service) =
+kitchenStats : Service -> Service
+kitchenStats ({ stats, economy } as service) =
     let
         updatedEconomy =
             provideKitchen economy
     in
     { service
         | economy = updatedEconomy
-        , score =
+        , stats =
             if updatedEconomy.kitchens >= 0 then
-                score
+                stats
 
             else
-                { score | health = housingModifiers.kitchen * score.health }
+                { stats | health = housingModifiers.kitchen * stats.health }
     }
 
 
@@ -273,47 +285,46 @@ provide : Person -> Economy -> Service
 provide person economy =
     let
         service =
-            { score = idealScore, economy = economy, person = person }
+            { stats = idealStats, economy = economy, person = person }
     in
     service
-        |> foodScore
+        |> foodStats
+        |> clothingStats
+        |> prescriptionStats
+        |> surgeryStats
+        |> hospitalizationStats
+        |> bedroomStats
+        |> bathroomStats
+        |> kitchenStats
 
 
-
--- |> clothingScore
--- |> prescriptionScore
--- |> surgeryScore
--- |> hospitalizationScore
--- |> bedroomScore
--- |> bathroomScore
--- |> kitchenScore
-
-
-toTuple : Score -> ( Float, Float )
+toTuple : Stats -> ( Float, Float )
 toTuple { happiness, health } =
     ( happiness, health )
 
 
-totalScore : List Person -> Economy -> Score
-totalScore population economy =
+provideHelp : Person -> ( List Service, Economy ) -> ( List Service, Economy )
+provideHelp person ( serviced, economy ) =
     let
-        provideHelp person serviced =
-            let
-                currentEconomy =
-                    Maybe.map .economy (List.head serviced) |> Maybe.withDefault economy
+        currentEconomy =
+            Maybe.map .economy (List.head serviced) |> Maybe.withDefault economy
 
-                service =
-                    provide person currentEconomy
-            in
-            service :: serviced
+        service =
+            provide person currentEconomy
+    in
+    ( service :: serviced, currentEconomy )
 
-        services =
-            List.foldl provideHelp [] population
+
+produce : List Person -> Economy -> Product
+produce population economy =
+    let
+        ( services, currentEconomy ) =
+            List.foldl provideHelp ( [], economy ) population
 
         ( happiness, health ) =
-            List.unzip (List.map (toTuple << .score) services)
+            List.unzip (List.map (toTuple << .stats) services)
 
         popSize =
             toFloat (List.length population)
     in
-    { happiness = List.sum happiness / popSize, health = List.sum health / popSize }
+    { avgHappiness = List.sum happiness / popSize, avgHealth = List.sum health / popSize, economy = currentEconomy }
