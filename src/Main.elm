@@ -21,6 +21,7 @@ import NarrativeEngine.Syntax.NarrativeParser as NarrativeParser
 import NarrativeEngine.Syntax.RuleParser as RuleParser
 import Palette
 import Person exposing (Person)
+import Random exposing (Generator)
 import Time
 
 
@@ -270,8 +271,13 @@ initialModel initialWorldModel =
       , health = 1
       , debug = NarrativeEngine.Debug.init
       }
-    , Cmd.none
+    , Random.generate RandomStart generateStart
     )
+
+
+generateStart : Generator Economy
+generateStart =
+    Economy.generate
 
 
 
@@ -324,6 +330,7 @@ if desired, and handle them in `update`.
 type Msg
     = InteractWith WorldModel.ID
     | UpdateDebugSearchText String
+    | RandomStart Economy
     | Tick Time.Posix
     | HarvestFood
     | Train Job.Title
@@ -382,6 +389,9 @@ update rules msg ({ economy } as model) =
 
         UpdateDebugSearchText searchText ->
             ( { model | debug = NarrativeEngine.Debug.updateSearch searchText model.debug }, Cmd.none )
+
+        RandomStart initialEconomy ->
+            ( { model | economy = initialEconomy }, Cmd.none )
 
         HarvestFood ->
             ( { model | economy = { economy | food = economy.food + 1 } }, Cmd.none )

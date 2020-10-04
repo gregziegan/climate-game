@@ -1,6 +1,8 @@
-module Economy exposing (Economy, Product, Service, Stats, idealStats, init, produce, provide)
+module Economy exposing (Economy, Product, Service, Stats, generate, idealStats, init, produce, provide)
 
 import Person exposing (Person)
+import Random exposing (Generator)
+import Random.Extra exposing (andMap)
 
 
 type alias Economy =
@@ -66,6 +68,88 @@ init =
     , food = 10
     , clothing = 10
     }
+
+
+genHospitalBeds : Generator Int
+genHospitalBeds =
+    Random.int 10 20
+
+
+genPrescriptionDrugs : Generator Int
+genPrescriptionDrugs =
+    Random.int 10 20
+
+
+genBedrooms : Generator Int
+genBedrooms =
+    Random.int 10 20
+
+
+genBathrooms : Generator Int
+genBathrooms =
+    Random.int 12 20
+
+
+genKitchens : Generator Int
+genKitchens =
+    Random.int 10 20
+
+
+genLivingRooms : Generator Int
+genLivingRooms =
+    Random.int 10 20
+
+
+genExtraRooms : Generator Int
+genExtraRooms =
+    Random.int 3 10
+
+
+genSurgeons : Generator Int
+genSurgeons =
+    Random.constant 0
+
+
+genOpenPrimaryEnrollment : Generator Int
+genOpenPrimaryEnrollment =
+    Random.constant 0
+
+
+genOpenSecondaryEnrollment : Generator Int
+genOpenSecondaryEnrollment =
+    Random.constant 0
+
+
+genOpenTertiaryEnrollment : Generator Int
+genOpenTertiaryEnrollment =
+    Random.constant 0
+
+
+genFood : Generator Int
+genFood =
+    Random.int 10 20
+
+
+genClothing : Generator Int
+genClothing =
+    Random.int 10 20
+
+
+generate : Generator Economy
+generate =
+    Random.map Economy genHospitalBeds
+        |> andMap genPrescriptionDrugs
+        |> andMap genBedrooms
+        |> andMap genBathrooms
+        |> andMap genKitchens
+        |> andMap genLivingRooms
+        |> andMap genExtraRooms
+        |> andMap genSurgeons
+        |> andMap genOpenPrimaryEnrollment
+        |> andMap genOpenSecondaryEnrollment
+        |> andMap genOpenTertiaryEnrollment
+        |> andMap genFood
+        |> andMap genClothing
 
 
 healthModifiers =
