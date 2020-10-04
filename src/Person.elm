@@ -1,6 +1,6 @@
-module Person exposing (Person, average)
+module Person exposing (Interest, Person, average, canGoToCollege, isQualified, wantsTertiaryEducation)
 
-import Job exposing (Job)
+import Job exposing (Job, Title(..))
 
 
 type Interest
@@ -18,18 +18,6 @@ type HealthcareNeed
     | Surgery
 
 
-type alias Years =
-    Int
-
-
-type Qualification
-    = MedicalDegree Years
-    | EngineeringDegree Years
-    | SocialWorkDegree Years
-    | TeachingDegree Years
-    | TradeDegree Years
-
-
 type TransitNeed
     = WalkingRoute
     | BikeRoute
@@ -38,12 +26,22 @@ type TransitNeed
     | TrainRoute
 
 
+type TertiaryQualification
+    = TradeDegree
+    | EngineeringDegree
+    | SocialWorkDegree
+    | MedicalDegree
+    | TeachingDegree
+
+
 type alias Person =
     { id : Int
     , name : String
     , age : Int
     , job : Maybe Job
-    , qualifications : List Qualification
+    , hasPrimaryEducation : Bool
+    , hasSecondaryEducation : Bool
+    , tertiaryQualifications : List TertiaryQualification
 
     -- wants
     , interest : Interest
@@ -57,13 +55,77 @@ type alias Person =
     }
 
 
+wantsTertiaryEducation : Person -> Bool
+wantsTertiaryEducation person =
+    not <|
+        case person.interest of
+            Medical ->
+                List.member MedicalDegree person.tertiaryQualifications
+
+            Engineering ->
+                List.member EngineeringDegree person.tertiaryQualifications
+
+            SocialWork ->
+                List.member SocialWorkDegree person.tertiaryQualifications
+
+            Teaching ->
+                List.member TeachingDegree person.tertiaryQualifications
+
+            Trade ->
+                List.member TradeDegree person.tertiaryQualifications
+
+            Unknown ->
+                True
+
+
+canGoToCollege : Person -> Bool
+canGoToCollege person =
+    person.job == Nothing && person.hasPrimaryEducation && person.hasSecondaryEducation && wantsTertiaryEducation person
+
+
+isQualified : Job.Title -> Person -> Bool
+isQualified title person =
+    case title of
+        Farmer ->
+            person.hasSecondaryEducation
+
+        Doctor ->
+            List.member MedicalDegree person.tertiaryQualifications
+
+        Nurse ->
+            List.member MedicalDegree person.tertiaryQualifications
+
+        CivilEngineer ->
+            List.member EngineeringDegree person.tertiaryQualifications
+
+        Programmer ->
+            List.member EngineeringDegree person.tertiaryQualifications
+
+        SocialWorker ->
+            List.member SocialWorkDegree person.tertiaryQualifications
+
+        Teacher ->
+            List.member TeachingDegree person.tertiaryQualifications
+
+        Professor ->
+            List.member TeachingDegree person.tertiaryQualifications
+
+        Carpenter ->
+            List.member TradeDegree person.tertiaryQualifications
+
+        Electrician ->
+            List.member TradeDegree person.tertiaryQualifications
+
+
 average : Int -> Person
 average id =
     { id = id
     , name = "Joe"
     , age = 35
-    , job = Nothing
-    , qualifications = []
+    , job = Just (Job.train Carpenter)
+    , hasPrimaryEducation = True
+    , hasSecondaryEducation = True
+    , tertiaryQualifications = [ TradeDegree ]
 
     -- wants
     , interest = Trade

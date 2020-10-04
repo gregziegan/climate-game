@@ -14,6 +14,9 @@ type alias Economy =
 
     -- permanent (ish)
     , surgeons : Int
+    , openPrimaryEnrollment : Int
+    , openSecondaryEnrollment : Int
+    , openTertiaryEnrollment : Int
 
     -- ephemeral
     , food : Int
@@ -50,13 +53,16 @@ idealStats =
 init : Economy
 init =
     { hospitalBeds = 10
-    , surgeons = 10
     , prescriptionDrugs = 10
     , bedrooms = 10
     , bathrooms = 12
     , kitchens = 10
     , livingRooms = 10
     , extraRooms = 2
+    , surgeons = 10
+    , openPrimaryEnrollment = 0
+    , openSecondaryEnrollment = 0
+    , openTertiaryEnrollment = 0
     , food = 10
     , clothing = 10
     }
@@ -135,6 +141,33 @@ provideKitchen economy =
 provideFood : Economy -> Economy
 provideFood economy =
     { economy | food = economy.food - 1 }
+
+
+provideEducation : Person -> Economy -> ( Economy, Bool )
+provideEducation person economy =
+    if not person.hasPrimaryEducation then
+        let
+            remainingSeats =
+                economy.openPrimaryEnrollment - 1
+        in
+        ( { economy | openPrimaryEnrollment = remainingSeats }, remainingSeats >= 0 )
+
+    else if not person.hasSecondaryEducation then
+        let
+            remainingSeats =
+                economy.openSecondaryEnrollment - 1
+        in
+        ( { economy | openSecondaryEnrollment = remainingSeats }, remainingSeats >= 0 )
+
+    else if Person.canGoToCollege person then
+        let
+            remainingSeats =
+                economy.openTertiaryEnrollment - 1
+        in
+        ( { economy | openTertiaryEnrollment = remainingSeats }, remainingSeats >= 0 )
+
+    else
+        ( economy, True )
 
 
 foodStats : Service -> Service
@@ -281,6 +314,35 @@ kitchenStats ({ stats, economy } as service) =
     }
 
 
+educationStats : Service -> Service
+educationStats ({ person, stats, economy } as service) =
+    let
+        ( updatedEconomy, openSeats ) =
+            provideEducation person economy
+    in
+    { service
+        | economy = updatedEconomy
+        , stats =
+            if openSeats then
+                stats
+
+            else
+                { stats | happiness = stats.happiness * 0.75 }
+    }
+
+
+provideHelp : Person -> ( List Service, Economy ) -> ( List Service, Economy )
+provideHelp person ( serviced, economy ) =
+    let
+        currentEconomy =
+            Maybe.map .economy (List.head serviced) |> Maybe.withDefault economy
+
+        service =
+            provide person currentEconomy
+    in
+    ( service :: serviced, currentEconomy )
+
+
 provide : Person -> Economy -> Service
 provide person economy =
     let
@@ -296,23 +358,12 @@ provide person economy =
         |> bedroomStats
         |> bathroomStats
         |> kitchenStats
+        |> educationStats
 
 
 toTuple : Stats -> ( Float, Float )
 toTuple { happiness, health } =
     ( happiness, health )
-
-
-provideHelp : Person -> ( List Service, Economy ) -> ( List Service, Economy )
-provideHelp person ( serviced, economy ) =
-    let
-        currentEconomy =
-            Maybe.map .economy (List.head serviced) |> Maybe.withDefault economy
-
-        service =
-            provide person currentEconomy
-    in
-    ( service :: serviced, currentEconomy )
 
 
 produce : List Person -> Economy -> Product

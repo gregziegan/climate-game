@@ -27,7 +27,20 @@ suite =
                             Person.average 1
 
                         economy =
-                            Economy.init
+                            { hospitalBeds = 10
+                            , prescriptionDrugs = 10
+                            , bedrooms = 10
+                            , bathrooms = 12
+                            , kitchens = 10
+                            , livingRooms = 10
+                            , extraRooms = 2
+                            , surgeons = 10
+                            , openPrimaryEnrollment = 10
+                            , openSecondaryEnrollment = 10
+                            , openTertiaryEnrollment = 10
+                            , food = 10
+                            , clothing = 10
+                            }
 
                         expectedService =
                             { stats = Economy.idealStats

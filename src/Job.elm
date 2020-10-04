@@ -1,4 +1,4 @@
-module Job exposing (Job, Title(..), showTitle, train)
+module Job exposing (Job, Title(..), description, showTitle, train)
 
 
 type Title
@@ -35,13 +35,13 @@ showTitle title =
             "Nurse"
 
         CivilEngineer ->
-            "CivilEngineer"
+            "Civil Engineer"
 
         Programmer ->
             "Programmer"
 
         SocialWorker ->
-            "SocialWorker"
+            "Social Worker"
 
         Teacher ->
             "Teacher"
@@ -54,6 +54,40 @@ showTitle title =
 
         Electrician ->
             "Electrician"
+
+
+description : Title -> String
+description title =
+    case title of
+        Farmer ->
+            "produce food"
+
+        Doctor ->
+            "perform surgeries; prescribe drugs"
+
+        Nurse ->
+            "prescribe drugs"
+
+        CivilEngineer ->
+            "build housing"
+
+        Programmer ->
+            "increase efficiency"
+
+        SocialWorker ->
+            "increase happiness"
+
+        Teacher ->
+            "train citizens for jobs and more school"
+
+        Professor ->
+            "train citizens for jobs"
+
+        Carpenter ->
+            "build housing"
+
+        Electrician ->
+            "build housing"
 
 
 train : Title -> Job

@@ -9,7 +9,7 @@ import Element.Border as Border
 import Element.Input exposing (button)
 import Element.Region as Region exposing (heading)
 import Html exposing (Html)
-import Html.Attributes exposing (title)
+import Html.Attributes exposing (class, title)
 import Job exposing (Job, Title(..))
 import List
 import NarrativeEngine.Core.Rules as Rules
@@ -412,6 +412,10 @@ score product =
     (product.avgHappiness + product.avgHealth / 2) * 100
 
 
+classSize =
+    30
+
+
 workPerson : Economy -> Job -> Economy
 workPerson economy job =
     case job.title of
@@ -434,10 +438,10 @@ workPerson economy job =
             { economy | prescriptionDrugs = economy.prescriptionDrugs + 2 }
 
         Teacher ->
-            economy
+            { economy | openSecondaryEnrollment = economy.openSecondaryEnrollment + classSize }
 
         Professor ->
-            economy
+            { economy | openTertiaryEnrollment = economy.openTertiaryEnrollment + classSize }
 
         Carpenter ->
             economy
@@ -450,7 +454,8 @@ workPopulation : List Person -> Economy -> Economy
 workPopulation people economy =
     List.foldl
         (\person acc ->
-            Maybe.map (workPerson economy) person.job
+            person.job
+                |> Maybe.map (workPerson economy)
                 |> Maybe.withDefault acc
         )
         economy
@@ -482,7 +487,7 @@ trainHelp title newPop population =
             newPop
 
         person :: rest ->
-            if person.job == Nothing then
+            if person.job == Nothing && Person.isQualified title person then
                 List.append newPop ({ person | job = Just (Job.train title) } :: rest)
 
             else
@@ -586,9 +591,9 @@ clickerEconomy model =
         )
 
 
-canTrain : List Person -> Bool
-canTrain population =
-    List.any (\person -> person.job == Nothing) population
+canTrain : Job.Title -> List Person -> Bool
+canTrain title population =
+    List.any (\person -> person.job == Nothing && Person.isQualified title person) population
 
 
 trainButton : List Person -> Title -> Element Msg
@@ -597,8 +602,8 @@ trainButton population title =
         titleString =
             Job.showTitle title
     in
-    if canTrain population then
-        button [] { onPress = Just (Train title), label = text ("Train a " ++ titleString ++ " to produce food!") }
+    if canTrain title population then
+        button [] { onPress = Just (Train title), label = text ("Train a " ++ titleString ++ " to " ++ Job.description title) }
 
     else
         button
