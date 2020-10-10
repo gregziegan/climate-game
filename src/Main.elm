@@ -1,6 +1,8 @@
 module Main exposing (main)
 
 import Browser
+import Calendar exposing (Date)
+import DateFormat
 import Dict exposing (Dict)
 import Economy exposing (Economy, Service, Stats)
 import Element exposing (Color, Element, alignRight, alignTop, centerX, centerY, column, el, fill, fillPortion, height, html, image, padding, paragraph, px, rgb255, row, spacing, text, textColumn, width)
@@ -22,7 +24,8 @@ import NarrativeEngine.Syntax.RuleParser as RuleParser
 import Palette
 import Person exposing (Person)
 import Random exposing (Generator)
-import Time
+import Task
+import Time exposing (Posix)
 
 
 
@@ -253,26 +256,42 @@ type alias Model =
     , score : Float
     , happiness : Float
     , health : Float
+    , date : Date
     , debug : NarrativeEngine.Debug.State
     }
 
 
+type alias InitialWorld =
+    { economy : Maybe Economy, time : Maybe Posix, worldModel : MyWorldModel }
+
+
+type Page
+    = Initializing InitialWorld
+    | Ready Model
+
+
 {-| This gets called from `main` with the fully parsed initial world model passed in.
 -}
-initialModel : MyWorldModel -> ( Model, Cmd Msg )
-initialModel initialWorldModel =
-    ( { worldModel = initialWorldModel
-      , story = "You're a democratically elected president: do the work to give your people happy and healthy lives."
-      , ruleCounts = Dict.empty
-      , population = List.map Person.average (List.range 0 10)
-      , economy = Economy.init
-      , score = 0
-      , happiness = 1
-      , health = 1
-      , debug = NarrativeEngine.Debug.init
-      }
-    , Random.generate RandomStart generateStart
+initialPage : MyWorldModel -> ( Page, Cmd Msg )
+initialPage initialWorldModel =
+    ( Initializing { economy = Nothing, time = Nothing, worldModel = initialWorldModel }
+    , Cmd.batch [ Task.perform InitialTime Time.now, Random.generate RandomStart generateStart ]
     )
+
+
+initialModel : Posix -> Economy -> MyWorldModel -> Model
+initialModel time economy worldModel =
+    { worldModel = worldModel
+    , story = "You're a democratically elected president: do the work to give your people happy and healthy lives."
+    , ruleCounts = Dict.empty
+    , population = List.map Person.average (List.range 0 10)
+    , economy = economy
+    , score = 0
+    , happiness = 1
+    , health = 1
+    , date = Calendar.fromPosix time
+    , debug = NarrativeEngine.Debug.init
+    }
 
 
 generateStart : Generator Economy
@@ -331,21 +350,27 @@ type Msg
     = InteractWith WorldModel.ID
     | UpdateDebugSearchText String
     | RandomStart Economy
-    | Tick Time.Posix
+    | InitialTime Posix
+    | Tick Posix
     | HarvestFood
     | Train Job.Title
 
 
-{-| We update our game whenever the player clicks on an entity. We need to check if
-any of our rules matched, and if so, we need to apply the changes, and set the new
-story text. We also track how many times each rule was triggered (used in cycling
-narrative syntax).
+updateInitializing : Rules -> Msg -> InitialWorld -> InitialWorld
+updateInitializing rules msg initialWorld =
+    case msg of
+        RandomStart economy ->
+            { initialWorld | economy = Just economy }
 
-The fully parsed `Rules` get passed in from `main`.
+        InitialTime time ->
+            { initialWorld | time = Just time }
 
--}
-update : Rules -> Msg -> Model -> ( Model, Cmd Msg )
-update rules msg ({ economy } as model) =
+        _ ->
+            initialWorld
+
+
+updateGame : Rules -> Msg -> Model -> ( Model, Cmd Msg )
+updateGame rules msg ({ economy } as model) =
     case msg of
         InteractWith trigger ->
             -- we need to check if any rule matched
@@ -412,9 +437,45 @@ update rules msg ({ economy } as model) =
                 , score = model.score + score product
                 , happiness = product.avgHappiness
                 , health = product.avgHealth
+                , date = Calendar.incrementDay model.date
               }
             , Cmd.none
             )
+
+        InitialTime _ ->
+            ( model, Cmd.none )
+
+
+{-| We update our game whenever the player clicks on an entity. We need to check if
+any of our rules matched, and if so, we need to apply the changes, and set the new
+story text. We also track how many times each rule was triggered (used in cycling
+narrative syntax).
+
+The fully parsed `Rules` get passed in from `main`.
+
+-}
+update : Rules -> Msg -> Page -> ( Page, Cmd Msg )
+update rules msg page =
+    case page of
+        Initializing initialWorld ->
+            let
+                world =
+                    updateInitializing rules msg initialWorld
+            in
+            case world.economy of
+                Just economy ->
+                    case world.time of
+                        Just time ->
+                            ( Ready (initialModel time economy world.worldModel), Cmd.none )
+
+                        Nothing ->
+                            ( Initializing world, Cmd.none )
+
+                Nothing ->
+                    ( Initializing world, Cmd.none )
+
+        Ready model ->
+            Tuple.mapFirst Ready (updateGame rules msg model)
 
 
 score : Economy.Product -> Float
@@ -713,9 +774,29 @@ storyColumn model =
         ]
 
 
-economyStats : Economy -> Element Msg
-economyStats economy =
-    textColumn [] [ paragraph [] [ text ("Available Food: " ++ String.fromInt economy.food) ] ]
+ourFormatter : Posix -> String
+ourFormatter =
+    DateFormat.format
+        [ DateFormat.monthNameFull
+        , DateFormat.text " "
+        , DateFormat.dayOfMonthSuffix
+        , DateFormat.text ", "
+        , DateFormat.yearNumber
+        ]
+        Time.utc
+
+
+ourDate : Date -> String
+ourDate date =
+    ourFormatter (Time.millisToPosix (Calendar.toMillis date))
+
+
+gameStats : Model -> Element Msg
+gameStats model =
+    textColumn []
+        [ paragraph [] [ text ("Current Time: " ++ ourDate model.date) ]
+        , paragraph [] [ text ("Available Food: " ++ String.fromInt model.economy.food) ]
+        ]
 
 
 view : Model -> Html Msg
@@ -736,7 +817,7 @@ view model =
                 , storyColumn model
                 ]
             , clickerGame model
-            , economyStats model.economy
+            , gameStats model
             ]
         )
 
@@ -750,14 +831,39 @@ second =
     1000
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ Time.every second Tick
-        ]
+subscriptions : Page -> Sub Msg
+subscriptions page =
+    case page of
+        Initializing _ ->
+            Sub.none
+
+        Ready _ ->
+            Sub.batch
+                [ Time.every second Tick
+                ]
 
 
-main : Program () Model Msg
+viewPage : Result SyntaxHelpers.ParseErrors a -> Page -> Browser.Document Msg
+viewPage parsedData page =
+    case page of
+        Initializing _ ->
+            { title = "Game Initializing", body = [ Html.text "Loading..." ] }
+
+        Ready model ->
+            { title = "Leader Game"
+            , body =
+                [ case parsedData of
+                    Ok _ ->
+                        view model
+
+                    Err errors ->
+                        -- Just show the errors, model is ignored
+                        SyntaxHelpers.parseErrorsView errors
+                ]
+            }
+
+
+main : Program () Page Msg
 main =
     let
         addExtraEntityFields { name, description } { tags, stats, links } =
@@ -783,20 +889,8 @@ main =
                 parsedData
                     |> Result.map Tuple.first
                     |> Result.withDefault Dict.empty
-                    |> initialModel
-        , view =
-            \model ->
-                { title = "Leader Game"
-                , body =
-                    [ case parsedData of
-                        Ok _ ->
-                            view model
-
-                        Err errors ->
-                            -- Just show the errors, model is ignored
-                            SyntaxHelpers.parseErrorsView errors
-                    ]
-                }
+                    |> initialPage
+        , view = viewPage parsedData
         , update =
             parsedData
                 |> Result.map Tuple.second
