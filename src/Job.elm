@@ -1,4 +1,6 @@
-module Job exposing (Job, Title(..), description, showTitle, train)
+module Job exposing (Job, Title(..), description, generate, showTitle, train)
+
+import Random exposing (Generator)
 
 
 type Title
@@ -122,3 +124,9 @@ train title =
 
         Farmer ->
             { title = title, salary = 50000 }
+
+
+generate : Generator Job
+generate =
+    Random.uniform Farmer [ Doctor, Nurse, CivilEngineer, Programmer, SocialWorker, Teacher, Professor, Carpenter, Electrician ]
+        |> Random.map train

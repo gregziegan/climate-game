@@ -1,6 +1,8 @@
-module Person exposing (Interest, Person, average, canGoToCollege, isQualified, wantsTertiaryEducation)
+module Person exposing (Interest, Person, average, canGoToCollege, generate, isQualified, wantsTertiaryEducation)
 
 import Job exposing (Job, Title(..))
+import Random exposing (Generator)
+import Random.Extra as Random exposing (andMap)
 
 
 type Interest
@@ -137,3 +139,107 @@ average id =
     , surgeriesNeeded = 0
     , needsHospitalization = False
     }
+
+
+generate : Generator Person
+generate =
+    Random.map Person genId
+        |> andMap genName
+        |> andMap genAge
+        |> andMap genJob
+        |> andMap genPrimaryEducation
+        |> andMap genSecondaryEducation
+        |> andMap genTertiaryEducation
+        |> andMap genInterest
+        |> andMap genWantsLivingRoom
+        |> andMap genWantsFlexRoom
+        |> andMap genPrescriptionsNeeded
+        |> andMap genSurgeriesNeeded
+        |> andMap genNeedsHospitalization
+
+
+genId : Generator Int
+genId =
+    Random.int Random.minInt Random.maxInt
+
+
+genName : Generator String
+genName =
+    -- TODO: integrate https://github.com/philipperemy/name-dataset
+    Random.uniform "Alexandria" [ "Bernard", "Marquita", "Noam", "Karl" ]
+
+
+genAge : Generator Int
+genAge =
+    Random.int 0 100
+
+
+genJob : Generator (Maybe Job)
+genJob =
+    Random.map2
+        (\n job ->
+            if n < 10 then
+                Nothing
+
+            else
+                Just job
+        )
+        (Random.int 1 100)
+        Job.generate
+
+
+genPrimaryEducation : Generator Bool
+genPrimaryEducation =
+    Random.map (\n -> n < 90) (Random.int 1 100)
+
+
+genSecondaryEducation : Generator Bool
+genSecondaryEducation =
+    Random.map (\n -> n < 75) (Random.int 1 100)
+
+
+generateQualification : Generator TertiaryQualification
+generateQualification =
+    Random.uniform TradeDegree
+        [ EngineeringDegree
+        , SocialWorkDegree
+        , MedicalDegree
+        , TeachingDegree
+        ]
+
+
+genTertiaryEducation : Generator (List TertiaryQualification)
+genTertiaryEducation =
+    Random.int 1 3
+        |> Random.andThen (\len -> Random.list len generateQualification)
+
+
+genInterest : Generator Interest
+genInterest =
+    Random.uniform Trade
+        [ Medical
+        , Engineering
+        , SocialWork
+        , Teaching
+        , Unknown
+        ]
+
+
+genWantsLivingRoom =
+    Random.bool
+
+
+genWantsFlexRoom =
+    Random.bool
+
+
+genPrescriptionsNeeded =
+    Random.int 0 5
+
+
+genSurgeriesNeeded =
+    Random.int 0 2
+
+
+genNeedsHospitalization =
+    Random.map (\n -> n < 5) (Random.int 1 100)

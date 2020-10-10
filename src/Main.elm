@@ -23,6 +23,7 @@ import NarrativeEngine.Syntax.NarrativeParser as NarrativeParser
 import NarrativeEngine.Syntax.RuleParser as RuleParser
 import Palette
 import Person exposing (Person)
+import Population exposing (Population)
 import Random exposing (Generator)
 import Task
 import Time exposing (Posix)
@@ -262,7 +263,7 @@ type alias Model =
 
 
 type alias InitialWorld =
-    { economy : Maybe Economy, time : Maybe Posix, worldModel : MyWorldModel }
+    { economy : Maybe Economy, population : Maybe Population, time : Maybe Posix, worldModel : MyWorldModel }
 
 
 type Page
@@ -274,17 +275,17 @@ type Page
 -}
 initialPage : MyWorldModel -> ( Page, Cmd Msg )
 initialPage initialWorldModel =
-    ( Initializing { economy = Nothing, time = Nothing, worldModel = initialWorldModel }
+    ( Initializing { economy = Nothing, population = Nothing, time = Nothing, worldModel = initialWorldModel }
     , Cmd.batch [ Task.perform InitialTime Time.now, Random.generate RandomStart generateStart ]
     )
 
 
-initialModel : Posix -> Economy -> MyWorldModel -> Model
-initialModel time economy worldModel =
+initialModel : Posix -> Economy -> Population -> MyWorldModel -> Model
+initialModel time economy population worldModel =
     { worldModel = worldModel
     , story = "You're a democratically elected president: do the work to give your people happy and healthy lives."
     , ruleCounts = Dict.empty
-    , population = List.map Person.average (List.range 0 10)
+    , population = population
     , economy = economy
     , score = 0
     , happiness = 1
@@ -294,9 +295,9 @@ initialModel time economy worldModel =
     }
 
 
-generateStart : Generator Economy
+generateStart : Generator ( Economy, Population )
 generateStart =
-    Economy.generate
+    Random.pair Economy.generate Population.generate
 
 
 
@@ -349,7 +350,7 @@ if desired, and handle them in `update`.
 type Msg
     = InteractWith WorldModel.ID
     | UpdateDebugSearchText String
-    | RandomStart Economy
+    | RandomStart ( Economy, Population )
     | InitialTime Posix
     | Tick Posix
     | HarvestFood
@@ -359,8 +360,8 @@ type Msg
 updateInitializing : Rules -> Msg -> InitialWorld -> InitialWorld
 updateInitializing rules msg initialWorld =
     case msg of
-        RandomStart economy ->
-            { initialWorld | economy = Just economy }
+        RandomStart ( economy, population ) ->
+            { initialWorld | economy = Just economy, population = Just population }
 
         InitialTime time ->
             { initialWorld | time = Just time }
@@ -415,9 +416,6 @@ updateGame rules msg ({ economy } as model) =
         UpdateDebugSearchText searchText ->
             ( { model | debug = NarrativeEngine.Debug.updateSearch searchText model.debug }, Cmd.none )
 
-        RandomStart initialEconomy ->
-            ( { model | economy = initialEconomy }, Cmd.none )
-
         HarvestFood ->
             ( { model | economy = { economy | food = economy.food + 1 } }, Cmd.none )
 
@@ -445,6 +443,9 @@ updateGame rules msg ({ economy } as model) =
         InitialTime _ ->
             ( model, Cmd.none )
 
+        RandomStart _ ->
+            ( model, Cmd.none )
+
 
 {-| We update our game whenever the player clicks on an entity. We need to check if
 any of our rules matched, and if so, we need to apply the changes, and set the new
@@ -464,9 +465,13 @@ update rules msg page =
             in
             case world.economy of
                 Just economy ->
+                    let
+                        population =
+                            Maybe.withDefault [] world.population
+                    in
                     case world.time of
                         Just time ->
-                            ( Ready (initialModel time economy world.worldModel), Cmd.none )
+                            ( Ready (initialModel time economy population world.worldModel), Cmd.none )
 
                         Nothing ->
                             ( Initializing world, Cmd.none )
