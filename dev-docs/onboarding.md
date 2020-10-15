@@ -8,7 +8,7 @@ npm i -g elm elm-format elm-test
 
 ## Hot Reloading
 
-Run `elm reactor src/Main.elm`
+Run `elm reactor`
 
 Open at http://localhost:8000
 
