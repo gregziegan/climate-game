@@ -581,7 +581,7 @@ train title population =
 
 clickerEarth : Model -> Element Msg
 clickerEarth model =
-    button [ width (px 100), height (px 100), Background.image "./public/earth.svg" ]
+    button [ width (px 280), height (px 280), Background.image "./public/EarthGame.svg" ]
         { onPress = Just HarvestFood, label = text "" }
 
 
@@ -705,8 +705,8 @@ clickerStore model =
 clickerGame : Model -> Element Msg
 clickerGame model =
     row [ width fill, centerY, spacing 30, padding 10 ]
-        [ clickerEarth model
-        , clickerEconomy model
+        [ clickerEconomy model
+        , clickerEarth model
         , clickerStore model
         ]
 
