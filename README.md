@@ -2,7 +2,7 @@
 
 A game where you're the leader of the "free world". Sign bills with legislators, work with indigenous groups, listen to activists, penalize companies and more to maximize a happy and healthy population. As for the climate... you can't really be healthy or happy in an inhospitable world 🙃.
 
-[Play now!](http://gregziegan.com/leader-game)
+[Play now!](http://gregziegan.com/climate-game)
 
 ## Design
 
