@@ -58,18 +58,3 @@ New and existing tasks can be found under the [code label](https://github.com/th
 
 If you know something about audio or want to learn: the game currently has **zero** sound effects!
 New and existing audio tasks can be found under the [audio label](https://github.com/thebritican/climate-game/labels/audio)
-
-Here are some audio examples we could use:
-
-* common conversational sounds
-  * sighs, laughs, etc
-* satisfying feedback for clicking options in dialogue
-* menu navigation sounds
-* pen scribbling (signing legislation)
-* "game over" music
-* background music for different locations
-  * political institutions like the oval office, congress, etc
-  * city streets
-  * national parks
-  * reservations
-* and more!
