@@ -10,6 +10,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Input exposing (button)
 import Element.Region as Region exposing (heading)
+import Housing exposing (Housing, Location(..))
 import Html exposing (Html)
 import Html.Attributes exposing (class, title)
 import Job exposing (Job, Title(..))
@@ -505,7 +506,7 @@ workPerson economy job =
             { economy | hospitalBeds = economy.hospitalBeds + 5, prescriptionDrugs = economy.prescriptionDrugs + 3 }
 
         CivilEngineer ->
-            { economy | bedrooms = economy.bedrooms + 1, bathrooms = economy.bathrooms + 1, kitchens = economy.kitchens + 1 }
+            { economy | availableHousing = Housing.buildHouse Urban :: economy.availableHousing }
 
         Programmer ->
             economy
