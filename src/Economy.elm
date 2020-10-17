@@ -61,6 +61,10 @@ genAvailableHousing =
         |> Random.andThen (\len -> Random.list len Housing.generate)
 
 
+
+-- RANDOM GENERATION
+
+
 genHospitalBeds : Generator Int
 genHospitalBeds =
     Random.int 10 20
