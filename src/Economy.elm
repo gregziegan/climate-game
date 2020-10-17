@@ -1,5 +1,6 @@
-module Economy exposing (Economy, Product, Service, Stats, generate, idealStats, init, produce, provide)
+module Economy exposing (Economy, Product, Service, Stats, generate, idealStats, produce, provide)
 
+import Housing exposing (Housing)
 import Person exposing (Person)
 import Random exposing (Generator)
 import Random.Extra exposing (andMap)
@@ -7,11 +8,8 @@ import Random.Extra exposing (andMap)
 
 type alias Economy =
     { -- permanent
-      bedrooms : Int
-    , bathrooms : Int
-    , kitchens : Int
-    , livingRooms : Int
-    , extraRooms : Int
+      occupiedHousing : List Housing
+    , availableHousing : List Housing
     , hospitalBeds : Int
 
     -- permanent (ish)
@@ -52,22 +50,15 @@ idealStats =
     { happiness = 1.0, health = 1.0 }
 
 
-init : Economy
-init =
-    { hospitalBeds = 10
-    , prescriptionDrugs = 10
-    , bedrooms = 10
-    , bathrooms = 12
-    , kitchens = 10
-    , livingRooms = 10
-    , extraRooms = 2
-    , surgeons = 10
-    , openPrimaryEnrollment = 0
-    , openSecondaryEnrollment = 0
-    , openTertiaryEnrollment = 0
-    , food = 10
-    , clothing = 10
-    }
+genOccupiedHousing : Generator (List Housing)
+genOccupiedHousing =
+    Random.constant []
+
+
+genAvailableHousing : Generator (List Housing)
+genAvailableHousing =
+    Random.int 5 15
+        |> Random.andThen (\len -> Random.list len Housing.generate)
 
 
 genHospitalBeds : Generator Int
@@ -78,31 +69,6 @@ genHospitalBeds =
 genPrescriptionDrugs : Generator Int
 genPrescriptionDrugs =
     Random.int 10 20
-
-
-genBedrooms : Generator Int
-genBedrooms =
-    Random.int 10 20
-
-
-genBathrooms : Generator Int
-genBathrooms =
-    Random.int 12 20
-
-
-genKitchens : Generator Int
-genKitchens =
-    Random.int 10 20
-
-
-genLivingRooms : Generator Int
-genLivingRooms =
-    Random.int 10 20
-
-
-genExtraRooms : Generator Int
-genExtraRooms =
-    Random.int 3 10
 
 
 genSurgeons : Generator Int
@@ -137,13 +103,10 @@ genClothing =
 
 generate : Generator Economy
 generate =
-    Random.map Economy genHospitalBeds
+    Random.map Economy genOccupiedHousing
+        |> andMap genAvailableHousing
+        |> andMap genHospitalBeds
         |> andMap genPrescriptionDrugs
-        |> andMap genBedrooms
-        |> andMap genBathrooms
-        |> andMap genKitchens
-        |> andMap genLivingRooms
-        |> andMap genExtraRooms
         |> andMap genSurgeons
         |> andMap genOpenPrimaryEnrollment
         |> andMap genOpenSecondaryEnrollment
@@ -207,19 +170,24 @@ hospitalize person economy =
     )
 
 
-provideBedroom : Economy -> Economy
-provideBedroom economy =
-    { economy | bedrooms = economy.bedrooms - 1 }
+provideHousing : Person -> Economy -> ( Person, Economy )
+provideHousing person economy =
+    let
+        available =
+            List.head economy.availableHousing
+    in
+    ( { person | house = available }
+    , { economy
+        | availableHousing = List.drop 1 economy.availableHousing
+        , occupiedHousing =
+            case available of
+                Just house ->
+                    house :: economy.occupiedHousing
 
-
-provideBathroom : Economy -> Economy
-provideBathroom economy =
-    { economy | bathrooms = economy.bathrooms - 1 }
-
-
-provideKitchen : Economy -> Economy
-provideKitchen economy =
-    { economy | kitchens = economy.kitchens - 1 }
+                Nothing ->
+                    economy.occupiedHousing
+      }
+    )
 
 
 provideFood : Economy -> Economy
@@ -347,54 +315,16 @@ hospitalizationStats ({ person, stats, economy } as service) =
     }
 
 
-bedroomStats : Service -> Service
-bedroomStats ({ stats, economy } as service) =
+housingStats : Service -> Service
+housingStats ({ stats, economy, person } as service) =
     let
-        updatedEconomy =
-            provideBedroom economy
+        ( updatedPerson, updatedEconomy ) =
+            provideHousing person economy
     in
     { service
-        | economy = updatedEconomy
-        , stats =
-            if updatedEconomy.bedrooms >= 0 then
-                stats
-
-            else
-                { stats | health = housingModifiers.bedroom * stats.health }
-    }
-
-
-bathroomStats : Service -> Service
-bathroomStats ({ stats, economy } as service) =
-    let
-        updatedEconomy =
-            provideBathroom economy
-    in
-    { service
-        | economy = updatedEconomy
-        , stats =
-            if updatedEconomy.bathrooms >= 0 then
-                stats
-
-            else
-                { stats | health = housingModifiers.bathroom * stats.health }
-    }
-
-
-kitchenStats : Service -> Service
-kitchenStats ({ stats, economy } as service) =
-    let
-        updatedEconomy =
-            provideKitchen economy
-    in
-    { service
-        | economy = updatedEconomy
-        , stats =
-            if updatedEconomy.kitchens >= 0 then
-                stats
-
-            else
-                { stats | health = housingModifiers.kitchen * stats.health }
+        | person = updatedPerson
+        , economy = updatedEconomy
+        , stats = { stats | health = Person.housingScore updatedPerson * stats.health }
     }
 
 
@@ -439,9 +369,7 @@ provide person economy =
         |> prescriptionStats
         |> surgeryStats
         |> hospitalizationStats
-        |> bedroomStats
-        |> bathroomStats
-        |> kitchenStats
+        |> housingStats
         |> educationStats
 
 

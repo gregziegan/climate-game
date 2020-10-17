@@ -1,5 +1,6 @@
-module Person exposing (Interest, Person, average, canGoToCollege, generate, isQualified, wantsTertiaryEducation)
+module Person exposing (Interest, Person, average, canGoToCollege, generate, housingScore, isQualified, wantsTertiaryEducation)
 
+import Housing exposing (Housing, Location(..))
 import Job exposing (Job, Title(..))
 import Random exposing (Generator)
 import Random.Extra as Random exposing (andMap)
@@ -54,7 +55,41 @@ type alias Person =
     , prescriptionsNeeded : Int
     , surgeriesNeeded : Int
     , needsHospitalization : Bool
+    , house : Maybe Housing
     }
+
+
+average : Int -> Person
+average id =
+    { id = id
+    , name = "Joe"
+    , age = 35
+    , job = Just (Job.train Carpenter)
+    , hasPrimaryEducation = True
+    , hasSecondaryEducation = True
+    , tertiaryQualifications = [ TradeDegree ]
+
+    -- wants
+    , interest = Trade
+    , wantsLivingRoom = True
+    , wantsFlexRoom = False
+
+    -- needs
+    , prescriptionsNeeded = 1
+    , surgeriesNeeded = 0
+    , needsHospitalization = False
+    , house = Nothing
+    }
+
+
+housingScore : Person -> Float
+housingScore person =
+    case person.house of
+        Just house ->
+            Housing.score house
+
+        Nothing ->
+            0
 
 
 wantsTertiaryEducation : Person -> Bool
@@ -119,28 +154,6 @@ isQualified title person =
             List.member TradeDegree person.tertiaryQualifications
 
 
-average : Int -> Person
-average id =
-    { id = id
-    , name = "Joe"
-    , age = 35
-    , job = Just (Job.train Carpenter)
-    , hasPrimaryEducation = True
-    , hasSecondaryEducation = True
-    , tertiaryQualifications = [ TradeDegree ]
-
-    -- wants
-    , interest = Trade
-    , wantsLivingRoom = True
-    , wantsFlexRoom = False
-
-    -- needs
-    , prescriptionsNeeded = 1
-    , surgeriesNeeded = 0
-    , needsHospitalization = False
-    }
-
-
 generate : Generator Person
 generate =
     Random.map Person genId
@@ -156,6 +169,7 @@ generate =
         |> andMap genPrescriptionsNeeded
         |> andMap genSurgeriesNeeded
         |> andMap genNeedsHospitalization
+        |> andMap genHousing
 
 
 genId : Generator Int
@@ -243,3 +257,7 @@ genSurgeriesNeeded =
 
 genNeedsHospitalization =
     Random.map (\n -> n < 5) (Random.int 1 100)
+
+
+genHousing =
+    Random.constant (Just (Housing.buildHouse Urban))
