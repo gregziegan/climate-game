@@ -457,7 +457,7 @@ updateGame rules msg ({ economy } as model) =
                 , happiness = product.avgHappiness
                 , health = product.avgHealth
                 , date = Calendar.incrementDay model.date
-                , history = History.record posixTime product.economy model.history
+                , history = History.record (Calendar.toMillis model.date |> Time.millisToPosix) product.economy model.history
               }
             , Cmd.none
             )
