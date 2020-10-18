@@ -15,20 +15,6 @@ type Interest
     | Unknown
 
 
-type HealthcareNeed
-    = Prescription Int
-    | Hospitalization
-    | Surgery
-
-
-type TransitNeed
-    = WalkingRoute
-    | BikeRoute
-    | CarRoute
-    | BusRoute
-    | TrainRoute
-
-
 type TertiaryQualification
     = TradeDegree
     | EngineeringDegree
@@ -179,7 +165,6 @@ genId =
 
 genName : Generator String
 genName =
-    -- TODO: integrate https://github.com/philipperemy/name-dataset
     Random.uniform "Alexandria" [ "Bernard", "Marquita", "Noam", "Karl" ]
 
 

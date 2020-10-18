@@ -10,7 +10,6 @@ import LineChart.Axis as Axis
 import LineChart.Axis.Intersection as Intersection
 import LineChart.Colors as Colors
 import LineChart.Container as Container
-import LineChart.Coordinate as Coordinate
 import LineChart.Dots as Dots
 import LineChart.Events as Events
 import LineChart.Grid as Grid
@@ -33,8 +32,15 @@ type alias HousingHistory =
     }
 
 
+type alias PublicHealthHistory =
+    { availableBeds : List Datum
+    , occupiedBeds : List Datum
+    }
+
+
 type alias History =
     { housing : HousingHistory
+    , publicHealth : PublicHealthHistory
     }
 
 
@@ -61,9 +67,17 @@ initHousingHistory time economy =
     }
 
 
+initPublicHealthHistory : Posix -> Economy -> PublicHealthHistory
+initPublicHealthHistory time economy =
+    { availableBeds = List.singleton (Datum time (toFloat economy.hospitalBeds))
+    , occupiedBeds = List.singleton (Datum time 0)
+    }
+
+
 init : Posix -> Economy -> History
 init time economy =
     { housing = initHousingHistory time economy
+    , publicHealth = initPublicHealthHistory time economy
     }
 
 
@@ -75,9 +89,19 @@ recordHousing time economy history =
     }
 
 
+recordPublicHealth : Posix -> Economy -> PublicHealthHistory -> PublicHealthHistory
+recordPublicHealth time economy history =
+    { history
+        | availableBeds = Datum time (toFloat economy.hospitalBeds) :: history.availableBeds
+    }
+
+
 record : Posix -> Economy -> History -> History
 record time economy history =
-    { history | housing = recordHousing time economy history.housing }
+    { history
+        | housing = recordHousing time economy history.housing
+        , publicHealth = recordPublicHealth time economy history.publicHealth
+    }
 
 
 
@@ -96,11 +120,14 @@ containerConfig =
 
 
 type alias HousingConfig msg =
-    { onHover : List Datum -> msg, economy : Economy, hinted : List Datum }
+    { onHover : List Datum -> msg
+    , economy : Economy
+    , hinted : List Datum
+    }
 
 
 chartConfig : HousingConfig msg -> LineChart.Config Datum msg
-chartConfig { onHover, hinted, economy } =
+chartConfig { onHover, hinted } =
     { y = Axis.default 450 "housing" .number
     , x = Axis.time Time.utc 1270 "time" (toFloat << Time.posixToMillis << .time)
     , container = containerConfig
@@ -133,7 +160,7 @@ viewCharts housingConfig history =
 
 formatX : Datum -> String
 formatX datum =
-    GameTime.ourFormatter datum.time
+    GameTime.usFormat datum.time
 
 
 formatY : Datum -> String

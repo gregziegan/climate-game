@@ -1,11 +1,11 @@
-module GameTime exposing (..)
+module GameTime exposing (usFormat)
 
 import DateFormat
 import Time exposing (Posix)
 
 
-ourFormatter : Posix -> String
-ourFormatter =
+usFormat : Posix -> String
+usFormat =
     DateFormat.format
         [ DateFormat.monthNameFull
         , DateFormat.text " "

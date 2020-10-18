@@ -2,21 +2,18 @@ module Main exposing (main)
 
 import Browser
 import Calendar exposing (Date)
-import DateFormat
 import Dict exposing (Dict)
-import Economy exposing (Economy, Service, Stats)
-import Element exposing (Color, Element, alignRight, alignTop, centerX, centerY, column, el, fill, fillPortion, height, html, image, padding, paragraph, px, rgb255, row, spacing, text, textColumn, width)
+import Economy exposing (Economy)
+import Element exposing (Element, alignTop, centerX, centerY, column, fill, fillPortion, height, html, image, padding, paragraph, px, rgb255, row, spacing, text, textColumn, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Input exposing (button)
 import Element.Region as Region exposing (heading)
 import GameTime
 import History exposing (Datum, History)
-import Housing exposing (Housing, Location(..))
+import Housing exposing (Location(..))
 import Html exposing (Html)
-import Html.Attributes exposing (class, title)
 import Job exposing (Job, Title(..))
-import LineChart
 import List
 import NarrativeEngine.Core.Rules as Rules
 import NarrativeEngine.Core.WorldModel as WorldModel
@@ -269,7 +266,11 @@ type alias Model =
 
 
 type alias InitialWorld =
-    { economy : Maybe Economy, population : Maybe Population, time : Maybe Posix, worldModel : MyWorldModel }
+    { economy : Maybe Economy
+    , population : Maybe Population
+    , time : Maybe Posix
+    , worldModel : MyWorldModel
+    }
 
 
 type Page
@@ -367,7 +368,7 @@ type Msg
 
 
 updateInitializing : Rules -> Msg -> InitialWorld -> InitialWorld
-updateInitializing rules msg initialWorld =
+updateInitializing _ msg initialWorld =
     case msg of
         RandomStart ( economy, population ) ->
             { initialWorld | economy = Just economy, population = Just population }
@@ -562,14 +563,6 @@ query q worldModel =
         |> Result.withDefault []
 
 
-{-| A helper to make assertions from a query syntax string. Make sure the syntax is
-correct or this defaults to false.
--}
-assert : String -> MyWorldModel -> Bool
-assert q worldModel =
-    not <| List.isEmpty <| query q worldModel
-
-
 trainHelp : Job.Title -> List Person -> List Person -> List Person
 trainHelp title newPop population =
     case population of
@@ -593,8 +586,8 @@ train title population =
 -- VIEW
 
 
-clickerEarth : Model -> Element Msg
-clickerEarth model =
+clickerEarth : Element Msg
+clickerEarth =
     button [ width (px 280), height (px 280), Background.image "./public/EarthGame.svg" ]
         { onPress = Just HarvestFood, label = text "" }
 
@@ -618,22 +611,22 @@ onlyForJob title person =
 
 
 doctor : Person -> Element Msg
-doctor person =
+doctor _ =
     paragraph [ heading 2 ] [ text "D" ]
 
 
 nurse : Person -> Element Msg
-nurse person =
+nurse _ =
     paragraph [ heading 2 ] [ text "N" ]
 
 
 civilEngineer : Person -> Element Msg
-civilEngineer person =
+civilEngineer _ =
     paragraph [ heading 2 ] [ text "C" ]
 
 
 socialWorker : Person -> Element Msg
-socialWorker person =
+socialWorker _ =
     paragraph [ heading 2 ] [ text "S" ]
 
 
@@ -721,7 +714,7 @@ clickerGame : Model -> Element Msg
 clickerGame model =
     row [ width fill, centerY, spacing 30, padding 10 ]
         [ clickerEconomy model
-        , clickerEarth model
+        , clickerEarth
         , clickerStore model
         , History.viewCharts { onHover = Hint, hinted = model.hinted, economy = model.economy } model.history
         ]
@@ -797,7 +790,7 @@ storyColumn model =
 
 ourDate : Date -> String
 ourDate date =
-    GameTime.ourFormatter (Time.millisToPosix (Calendar.toMillis date))
+    GameTime.usFormat (Time.millisToPosix (Calendar.toMillis date))
 
 
 gameStats : Model -> Element Msg
@@ -884,11 +877,11 @@ main =
             , description = description
             }
 
-        addExtraRuleFields extraFields rule =
+        addExtraRuleFields _ rule =
             rule
 
         parsedData =
-            Result.map3 (\parsedInitialWorldModel narrative parsedRules -> ( parsedInitialWorldModel, parsedRules ))
+            Result.map3 (\parsedInitialWorldModel _ parsedRules -> ( parsedInitialWorldModel, parsedRules ))
                 (EntityParser.parseMany addExtraEntityFields initialWorldModelSpec)
                 (NarrativeParser.parseMany narrative_content)
                 (RuleParser.parseRules addExtraRuleFields rulesSpec)

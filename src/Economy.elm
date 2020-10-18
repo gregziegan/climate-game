@@ -1,6 +1,5 @@
 module Economy exposing (Economy, Product, Service, Stats, generate, idealStats, produce, provide)
 
-import Element exposing (Element, html)
 import Housing exposing (Housing)
 import Person exposing (Person)
 import Random exposing (Generator)
@@ -127,15 +126,6 @@ healthModifiers =
     , surgery = 0
     , prescription = 0
     , hospitalization = 0.25
-    }
-
-
-transitModifiers : { walking : Float, biking : Float, car : Float, train : Float }
-transitModifiers =
-    { walking = 1 -- TODO: ableist algorithm, need to factor in accessibility ASAP
-    , biking = 0.75
-    , car = 0.3
-    , train = 0.8
     }
 
 

@@ -1,4 +1,4 @@
-module Palette exposing (..)
+module Palette exposing (grey)
 
 import Element exposing (rgb)
 
