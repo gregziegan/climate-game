@@ -1,24 +1,29 @@
-module Economy exposing (Economy, Product, Service, Stats, generate, idealStats, produce, provide)
+module Economy exposing (Economy, Product, Service, Stats, distribute, generate, idealStats, produce)
+
+{-| The Economy is comprised of capital and services to be distributed.
+
+The `Population`'s labor produces capital and services (`Economy.produce`).
+
+The `Population` consumes capital and services (`Economy.distribute`).
+
+-}
 
 import Housing exposing (Housing)
+import Job exposing (Job)
 import Person exposing (Person)
+import Population exposing (Population)
 import Random exposing (Generator)
 import Random.Extra exposing (andMap)
 
 
 type alias Economy =
-    { -- permanent
-      occupiedHousing : List Housing
+    { occupiedHousing : List Housing
     , availableHousing : List Housing
     , hospitalBeds : Int
-
-    -- permanent (ish)
     , surgeons : Int
     , openPrimaryEnrollment : Int
     , openSecondaryEnrollment : Int
     , openTertiaryEnrollment : Int
-
-    -- ephemeral
     , food : Int
     , clothing : Int
     , prescriptionDrugs : Int
@@ -48,6 +53,28 @@ type alias Product =
 idealStats : Stats
 idealStats =
     { happiness = 1.0, health = 1.0 }
+
+
+work : Economy -> Job -> Economy
+work economy job =
+    let
+        capital =
+            Job.work job
+    in
+    { economy
+        | food = economy.food + capital.food
+        , surgeons = economy.surgeons + capital.surgeons
+        , prescriptionDrugs = economy.prescriptionDrugs + capital.prescriptionDrugs
+        , hospitalBeds = economy.hospitalBeds + capital.hospitalBeds
+        , availableHousing = economy.availableHousing ++ capital.housing
+        , openPrimaryEnrollment = economy.openPrimaryEnrollment + capital.openPrimaryEnrollment
+        , openSecondaryEnrollment = economy.openSecondaryEnrollment + capital.openSecondaryEnrollment
+        , openTertiaryEnrollment = economy.openTertiaryEnrollment + capital.openTertiaryEnrollment
+    }
+
+
+
+-- GENERATE
 
 
 genOccupiedHousing : Generator (List Housing)
@@ -333,8 +360,8 @@ educationStats ({ person, stats, economy } as service) =
     }
 
 
-provideHelp : Person -> ( List Service, Economy ) -> ( List Service, Economy )
-provideHelp person ( serviced, economy ) =
+distributeHelp : Person -> ( List Service, Economy ) -> ( List Service, Economy )
+distributeHelp person ( serviced, economy ) =
     let
         currentEconomy =
             Maybe.map .economy (List.head serviced) |> Maybe.withDefault economy
@@ -366,11 +393,11 @@ toTuple { happiness, health } =
     ( happiness, health )
 
 
-produce : List Person -> Economy -> Product
-produce population economy =
+distribute : Population -> Economy -> Product
+distribute population economy =
     let
         ( services, currentEconomy ) =
-            List.foldl provideHelp ( [], economy ) population
+            List.foldl distributeHelp ( [], economy ) population
 
         ( happiness, health ) =
             List.unzip (List.map (toTuple << .stats) services)
@@ -379,3 +406,14 @@ produce population economy =
             toFloat (List.length population)
     in
     { avgHappiness = List.sum happiness / popSize, avgHealth = List.sum health / popSize, economy = currentEconomy }
+
+
+produce : Population -> Economy -> Economy
+produce people economy =
+    List.foldl
+        (\person economyWithCapital ->
+            Maybe.map (work economy) person.job
+                |> Maybe.withDefault economyWithCapital
+        )
+        economy
+        people

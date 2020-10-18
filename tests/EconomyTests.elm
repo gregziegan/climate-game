@@ -70,7 +70,7 @@ suite =
                             { happiness = 1, health = 1 }
 
                         product =
-                            Economy.produce population economy
+                            Economy.distribute population economy
                     in
                     Expect.equal expected { happiness = product.avgHappiness, health = product.avgHealth }
             , test "returns half the ideal score for a half-served population" <|
@@ -83,7 +83,7 @@ suite =
                             { happiness = 1, health = 0.5 }
 
                         product =
-                            Economy.produce population economy
+                            Economy.distribute population economy
                     in
                     Expect.equal expected { happiness = product.avgHappiness, health = product.avgHealth }
             ]

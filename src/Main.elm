@@ -436,8 +436,8 @@ updateGame rules msg ({ economy } as model) =
             let
                 product =
                     model.economy
-                        |> workPopulation model.population
                         |> Economy.produce model.population
+                        |> Economy.distribute model.population
             in
             ( { model
                 | population = Person.average (Time.posixToMillis posixTime) :: model.population
@@ -500,57 +500,6 @@ update rules msg page =
 score : Economy.Product -> Float
 score product =
     (product.avgHappiness + product.avgHealth / 2) * 100
-
-
-classSize : number
-classSize =
-    30
-
-
-workPerson : Economy -> Job -> Economy
-workPerson economy job =
-    case job.title of
-        Farmer ->
-            { economy | food = economy.food + 50 }
-
-        Doctor ->
-            { economy | surgeons = economy.surgeons + 1, prescriptionDrugs = economy.prescriptionDrugs + 1 }
-
-        Nurse ->
-            { economy | hospitalBeds = economy.hospitalBeds + 5, prescriptionDrugs = economy.prescriptionDrugs + 3 }
-
-        CivilEngineer ->
-            { economy | availableHousing = Housing.buildHouse Urban :: economy.availableHousing }
-
-        Programmer ->
-            economy
-
-        SocialWorker ->
-            { economy | prescriptionDrugs = economy.prescriptionDrugs + 2 }
-
-        Teacher ->
-            { economy | openSecondaryEnrollment = economy.openSecondaryEnrollment + classSize }
-
-        Professor ->
-            { economy | openTertiaryEnrollment = economy.openTertiaryEnrollment + classSize }
-
-        Carpenter ->
-            economy
-
-        Electrician ->
-            economy
-
-
-workPopulation : List Person -> Economy -> Economy
-workPopulation people economy =
-    List.foldl
-        (\person acc ->
-            person.job
-                |> Maybe.map (workPerson economy)
-                |> Maybe.withDefault acc
-        )
-        economy
-        people
 
 
 {-| A helper to make queries from a query syntax string. Make sure the syntax is

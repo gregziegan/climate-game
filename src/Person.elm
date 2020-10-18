@@ -68,6 +68,10 @@ average id =
     }
 
 
+
+-- QUERY
+
+
 housingScore : Person -> Float
 housingScore person =
     case person.house of

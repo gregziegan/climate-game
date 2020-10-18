@@ -1,5 +1,7 @@
-module Job exposing (Job, Title(..), description, generate, showTitle, train)
+module Job exposing (Job, Title(..), description, generate, showTitle, train, work)
 
+import Capital exposing (Capital)
+import Housing exposing (Housing)
 import Random exposing (Generator)
 
 
@@ -124,6 +126,49 @@ train title =
 
         Farmer ->
             { title = title, salary = 50000 }
+
+
+classSize : number
+classSize =
+    30
+
+
+work : Job -> Capital
+work job =
+    let
+        capital =
+            Capital [] 0 0 0 0 0 0 0 0
+    in
+    case job.title of
+        Farmer ->
+            { capital | food = 50 }
+
+        Doctor ->
+            { capital | surgeons = capital.surgeons + 1, prescriptionDrugs = capital.prescriptionDrugs + 1 }
+
+        Nurse ->
+            { capital | hospitalBeds = capital.hospitalBeds + 5, prescriptionDrugs = capital.prescriptionDrugs + 3 }
+
+        CivilEngineer ->
+            { capital | housing = [ Housing.buildHouse Housing.Urban ] }
+
+        Programmer ->
+            capital
+
+        SocialWorker ->
+            { capital | prescriptionDrugs = capital.prescriptionDrugs + 2 }
+
+        Teacher ->
+            { capital | openSecondaryEnrollment = capital.openSecondaryEnrollment + classSize }
+
+        Professor ->
+            { capital | openTertiaryEnrollment = capital.openTertiaryEnrollment + classSize }
+
+        Carpenter ->
+            capital
+
+        Electrician ->
+            capital
 
 
 generate : Generator Job
