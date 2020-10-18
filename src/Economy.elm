@@ -1,5 +1,6 @@
 module Economy exposing (Economy, Product, Service, Stats, generate, idealStats, produce, provide)
 
+import Element exposing (Element, html)
 import Housing exposing (Housing)
 import Person exposing (Person)
 import Random exposing (Generator)
@@ -119,6 +120,7 @@ generate =
         |> andMap genClothing
 
 
+healthModifiers : { food : number, clothing : Float, surgery : number, prescription : number, hospitalization : Float }
 healthModifiers =
     { food = 0
     , clothing = 0.5
@@ -128,15 +130,7 @@ healthModifiers =
     }
 
 
-housingModifiers =
-    { bedroom = 0
-    , bathroom = 0
-    , kitchen = 0.8
-    , livingRoom = 0.3
-    , flexRoomStats = 0.9
-    }
-
-
+transitModifiers : { walking : Float, biking : Float, car : Float, train : Float }
 transitModifiers =
     { walking = 1 -- TODO: ableist algorithm, need to factor in accessibility ASAP
     , biking = 0.75

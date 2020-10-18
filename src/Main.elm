@@ -10,25 +10,13 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Input exposing (button)
 import Element.Region as Region exposing (heading)
+import GameTime
 import History exposing (Datum, History)
 import Housing exposing (Housing, Location(..))
 import Html exposing (Html)
 import Html.Attributes exposing (class, title)
 import Job exposing (Job, Title(..))
 import LineChart
-import LineChart.Area as Area
-import LineChart.Axis as Axis
-import LineChart.Axis.Intersection as Intersection
-import LineChart.Colors as Colors
-import LineChart.Container as Container
-import LineChart.Coordinate as Coordinate
-import LineChart.Dots as Dots
-import LineChart.Events as Events
-import LineChart.Grid as Grid
-import LineChart.Interpolation as Interpolation
-import LineChart.Junk as Junk
-import LineChart.Legends as Legends
-import LineChart.Line as Line
 import List
 import NarrativeEngine.Core.Rules as Rules
 import NarrativeEngine.Core.WorldModel as WorldModel
@@ -513,6 +501,7 @@ score product =
     (product.avgHappiness + product.avgHealth / 2) * 100
 
 
+classSize : number
 classSize =
     30
 
@@ -715,6 +704,7 @@ trainButton population title =
             { onPress = Nothing, label = text ("No prospective " ++ String.toLower titleString ++ " available") }
 
 
+clickerStore : Model -> Element Msg
 clickerStore model =
     column [ width fill, spacing 20 ]
         (List.map (trainButton model.population)
@@ -727,71 +717,13 @@ clickerStore model =
         )
 
 
-viewEconomy : Model -> Element Msg
-viewEconomy model =
-    html
-        (LineChart.viewCustom
-            (chartConfig model)
-            [ LineChart.line Colors.pink Dots.diamond "Available Housing" model.history.housing.available
-            , LineChart.line Colors.cyan Dots.circle "Occupied Housing" model.history.housing.occupied
-            ]
-        )
-
-
-formatX : Datum -> String
-formatX datum =
-    ourFormatter datum.time
-
-
-formatY : Datum -> String
-formatY datum =
-    String.fromFloat datum.number
-
-
-chartConfig : Model -> LineChart.Config Datum Msg
-chartConfig model =
-    { y = Axis.default 450 "housing" .number
-    , x = Axis.time Time.utc 1270 "time" (toFloat << Time.posixToMillis << .time)
-    , container = containerConfig
-    , interpolation = Interpolation.monotone
-    , intersection = Intersection.default
-    , legends = Legends.default
-    , events = Events.hoverMany Hint
-    , junk = Junk.hoverMany model.hinted formatX formatY
-    , grid = Grid.dots 1 Colors.gray
-    , area = Area.stacked 0.5
-    , line = Line.default
-    , dots = Dots.custom (Dots.empty 5 1)
-    }
-
-
-containerConfig : Container.Config Msg
-containerConfig =
-    Container.custom
-        { attributesHtml = []
-        , attributesSvg = []
-        , size = Container.relative
-        , margin = Container.Margin 30 100 30 70
-        , id = "line-chart-area"
-        }
-
-
-
--- UTILS
-
-
-round100 : Float -> Float
-round100 float =
-    toFloat (round (float * 100)) / 100
-
-
 clickerGame : Model -> Element Msg
 clickerGame model =
     row [ width fill, centerY, spacing 30, padding 10 ]
         [ clickerEconomy model
         , clickerEarth model
         , clickerStore model
-        , viewEconomy model
+        , History.viewCharts { onHover = Hint, hinted = model.hinted, economy = model.economy } model.history
         ]
 
 
@@ -863,21 +795,9 @@ storyColumn model =
         ]
 
 
-ourFormatter : Posix -> String
-ourFormatter =
-    DateFormat.format
-        [ DateFormat.monthNameFull
-        , DateFormat.text " "
-        , DateFormat.dayOfMonthSuffix
-        , DateFormat.text ", "
-        , DateFormat.yearNumber
-        ]
-        Time.utc
-
-
 ourDate : Date -> String
 ourDate date =
-    ourFormatter (Time.millisToPosix (Calendar.toMillis date))
+    GameTime.ourFormatter (Time.millisToPosix (Calendar.toMillis date))
 
 
 gameStats : Model -> Element Msg
@@ -916,6 +836,7 @@ viewEntity ( id, { name } ) =
     button [] { onPress = Just (InteractWith id), label = text name }
 
 
+second : number
 second =
     1000
 

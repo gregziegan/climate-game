@@ -239,25 +239,31 @@ genInterest =
         ]
 
 
+genWantsLivingRoom : Generator Bool
 genWantsLivingRoom =
     Random.bool
 
 
+genWantsFlexRoom : Generator Bool
 genWantsFlexRoom =
     Random.bool
 
 
+genPrescriptionsNeeded : Generator Int
 genPrescriptionsNeeded =
     Random.int 0 5
 
 
+genSurgeriesNeeded : Generator Int
 genSurgeriesNeeded =
     Random.int 0 2
 
 
+genNeedsHospitalization : Generator Bool
 genNeedsHospitalization =
     Random.map (\n -> n < 5) (Random.int 1 100)
 
 
+genHousing : Generator (Maybe Housing)
 genHousing =
     Random.constant (Just (Housing.buildHouse Urban))
