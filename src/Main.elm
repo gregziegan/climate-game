@@ -253,7 +253,7 @@ type alias Model =
     { worldModel : MyWorldModel
     , story : String
     , ruleCounts : Dict String Int
-    , population : List Person
+    , population : Population
     , economy : Economy
     , score : Float
     , happiness : Float
@@ -430,7 +430,7 @@ updateGame rules msg ({ economy } as model) =
             ( { model | economy = { economy | food = economy.food + 1 } }, Cmd.none )
 
         Train title ->
-            ( { model | population = train title model.population }, Cmd.none )
+            ( { model | population = Population.train title model.population }, Cmd.none )
 
         Tick posixTime ->
             let
@@ -512,25 +512,6 @@ query q worldModel =
         |> Result.withDefault []
 
 
-trainHelp : Job.Title -> List Person -> List Person -> List Person
-trainHelp title newPop population =
-    case population of
-        [] ->
-            newPop
-
-        person :: rest ->
-            if person.job == Nothing && Person.isQualified title person then
-                List.append newPop ({ person | job = Just (Job.train title) } :: rest)
-
-            else
-                trainHelp title (person :: newPop) rest
-
-
-train : Title -> List Person -> List Person
-train title population =
-    trainHelp title [] population
-
-
 
 -- VIEW
 
@@ -601,7 +582,7 @@ viewWorker title =
             \_ -> Element.none
 
 
-viewWorkforce : List Person -> Title -> Element Msg
+viewWorkforce : Population -> Title -> Element Msg
 viewWorkforce population title =
     row []
         (List.filterMap
@@ -623,18 +604,13 @@ clickerEconomy model =
         )
 
 
-canTrain : Job.Title -> List Person -> Bool
-canTrain title population =
-    List.any (\person -> person.job == Nothing && Person.isQualified title person) population
-
-
-trainButton : List Person -> Title -> Element Msg
+trainButton : Population -> Title -> Element Msg
 trainButton population title =
     let
         titleString =
             Job.showTitle title
     in
-    if canTrain title population then
+    if Population.canTrain title population then
         button [] { onPress = Just (Train title), label = text ("Train a " ++ titleString ++ " to " ++ Job.description title) }
 
     else
@@ -737,15 +713,15 @@ storyColumn model =
         ]
 
 
-ourDate : Date -> String
-ourDate date =
+formatDate : Date -> String
+formatDate date =
     GameTime.usFormat (Time.millisToPosix (Calendar.toMillis date))
 
 
 gameStats : Model -> Element Msg
 gameStats model =
     textColumn []
-        [ paragraph [] [ text ("Current Time: " ++ ourDate model.date) ]
+        [ paragraph [] [ text ("Current Time: " ++ formatDate model.date) ]
         , paragraph [] [ text ("Available Food: " ++ String.fromInt model.economy.food) ]
         ]
 
