@@ -13,7 +13,7 @@ import GameTime
 import History exposing (Datum, History)
 import Housing exposing (Location(..))
 import Html exposing (Html)
-import Job exposing (Job, Title(..))
+import Job exposing (Title(..))
 import List
 import NarrativeEngine.Core.Rules as Rules
 import NarrativeEngine.Core.WorldModel as WorldModel

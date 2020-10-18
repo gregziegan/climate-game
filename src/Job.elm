@@ -1,7 +1,7 @@
 module Job exposing (Job, Title(..), description, generate, showTitle, train, work)
 
 import Capital exposing (Capital)
-import Housing exposing (Housing)
+import Housing
 import Random exposing (Generator)
 
 
