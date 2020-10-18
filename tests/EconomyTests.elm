@@ -35,31 +35,7 @@ economy =
 suite : Test
 suite =
     describe "The Economy module"
-        [ describe "Economy.provide"
-            [ test "tablates correct score for the average individual" <|
-                \_ ->
-                    let
-                        person =
-                            Person.average 1
-
-                        expectedService =
-                            { stats = Economy.idealStats
-                            , economy =
-                                { economy
-                                    | occupiedHousing = List.take 1 economy.availableHousing
-                                    , availableHousing = List.drop 1 economy.availableHousing
-                                    , food = economy.food - 1
-                                    , clothing = economy.clothing - 1
-                                    , prescriptionDrugs = economy.prescriptionDrugs - person.prescriptionsNeeded
-                                    , surgeons = economy.surgeons - person.surgeriesNeeded
-                                    , hospitalBeds = economy.hospitalBeds - boolToNum person.needsHospitalization
-                                }
-                            , person = { person | prescriptionsNeeded = 0, house = List.head economy.availableHousing }
-                            }
-                    in
-                    Expect.equal expectedService (Economy.provide person economy)
-            ]
-        , describe "Economy.produce"
+        [ describe "Economy.produce"
             [ test "returns ideal happiness and healthiness for a satisfied population" <|
                 \_ ->
                     let
