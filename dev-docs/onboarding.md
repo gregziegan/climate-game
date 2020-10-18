@@ -10,7 +10,7 @@ npm i -g elm elm-format elm-test
 
 Run `elm reactor`
 
-Open at http://localhost:8000
+Open at http://localhost:8000/src/Main.elm
 
 ## Development Area: Decision Screen
 
