@@ -15,20 +15,6 @@ type Interest
     | Unknown
 
 
-type HealthcareNeed
-    = Prescription Int
-    | Hospitalization
-    | Surgery
-
-
-type TransitNeed
-    = WalkingRoute
-    | BikeRoute
-    | CarRoute
-    | BusRoute
-    | TrainRoute
-
-
 type TertiaryQualification
     = TradeDegree
     | EngineeringDegree
@@ -179,7 +165,6 @@ genId =
 
 genName : Generator String
 genName =
-    -- TODO: integrate https://github.com/philipperemy/name-dataset
     Random.uniform "Alexandria" [ "Bernard", "Marquita", "Noam", "Karl" ]
 
 
@@ -239,25 +224,31 @@ genInterest =
         ]
 
 
+genWantsLivingRoom : Generator Bool
 genWantsLivingRoom =
     Random.bool
 
 
+genWantsFlexRoom : Generator Bool
 genWantsFlexRoom =
     Random.bool
 
 
+genPrescriptionsNeeded : Generator Int
 genPrescriptionsNeeded =
     Random.int 0 5
 
 
+genSurgeriesNeeded : Generator Int
 genSurgeriesNeeded =
     Random.int 0 2
 
 
+genNeedsHospitalization : Generator Bool
 genNeedsHospitalization =
     Random.map (\n -> n < 5) (Random.int 1 100)
 
 
+genHousing : Generator (Maybe Housing)
 genHousing =
     Random.constant (Just (Housing.buildHouse Urban))

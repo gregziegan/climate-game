@@ -1,4 +1,4 @@
-module Population exposing (..)
+module Population exposing (Population, generate)
 
 import Person exposing (Person)
 import Random exposing (Generator)

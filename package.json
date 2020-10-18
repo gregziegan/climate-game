@@ -1,0 +1,33 @@
+{
+  "name": "climate-game",
+  "version": "1.0.0",
+  "description": "A game where you're the leader of the \"free world\". Sign bills with legislators, work with indigenous groups, listen to activists, penalize companies and more to maximize a happy and healthy population. As for the climate... you can't really be healthy or happy in an inhospitable world 🙃.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "debug": "./maintenance/debug",
+    "analyse": "elm-analyse",
+    "manage": "elm-json",
+    "test": "elm-test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thebritican/climate-game.git"
+  },
+  "author": "Greg Ziegan",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/thebritican/climate-game/issues"
+  },
+  "homepage": "https://github.com/thebritican/climate-game#readme",
+  "devDependencies": {
+    "elm": "^0.19.1-3",
+    "elm-analyse": "^0.16.5",
+    "elm-format": "^0.8.4",
+    "elm-json": "^0.2.8",
+    "elm-test": "^0.19.1-revision4"
+  }
+}

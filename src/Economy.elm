@@ -119,29 +119,13 @@ generate =
         |> andMap genClothing
 
 
+healthModifiers : { food : number, clothing : Float, surgery : number, prescription : number, hospitalization : Float }
 healthModifiers =
     { food = 0
     , clothing = 0.5
     , surgery = 0
     , prescription = 0
     , hospitalization = 0.25
-    }
-
-
-housingModifiers =
-    { bedroom = 0
-    , bathroom = 0
-    , kitchen = 0.8
-    , livingRoom = 0.3
-    , flexRoomStats = 0.9
-    }
-
-
-transitModifiers =
-    { walking = 1 -- TODO: ableist algorithm, need to factor in accessibility ASAP
-    , biking = 0.75
-    , car = 0.3
-    , train = 0.8
     }
 
 
