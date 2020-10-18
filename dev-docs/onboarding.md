@@ -3,7 +3,7 @@
 ## One-time setup
 
 ```bash
-npm i -g elm elm-format elm-test
+npm install
 ```
 
 ## Hot Reloading
