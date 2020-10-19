@@ -143,6 +143,9 @@ isQualified title person =
         Electrician ->
             List.member TradeDegree person.tertiaryQualifications
 
+        Lumberjack ->
+            person.hasSecondaryEducation
+
 
 generate : Generator Person
 generate =

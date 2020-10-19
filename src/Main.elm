@@ -256,6 +256,7 @@ type alias Model =
     , ruleCounts : Dict String Int
     , population : Population
     , economy : Economy
+    , earth : Earth
     , score : Float
     , happiness : Float
     , health : Float
@@ -302,6 +303,7 @@ initialModel debugMode time economy population worldModel =
     , ruleCounts = Dict.empty
     , population = population
     , economy = economy
+    , earth = Earth.init
     , score = 0
     , happiness = 1
     , health = 1
@@ -530,12 +532,6 @@ query q worldModel =
 -- VIEW
 
 
-clickerEarth : Element Msg
-clickerEarth =
-    button [ width (px 280), height (px 280), Background.image "./public/EarthGame.svg" ]
-        { onPress = Just HarvestFood, label = text "" }
-
-
 farmer : Person -> Element Msg
 farmer person =
     image [ width (px 32), height (px 64) ] { src = "./public/farmer" ++ String.fromInt (modBy 3 person.id) ++ ".png", description = "An 8-bit representation of a farmer." }
@@ -653,7 +649,7 @@ clickerGame : Model -> Element Msg
 clickerGame model =
     row [ width fill, centerY, spacing 30, padding 10 ]
         [ clickerEconomy model
-        , clickerEarth
+        , Earth.view { onPress = HarvestFood } model.earth
         , clickerStore model
         , History.viewCharts { onHover = Hint, hinted = model.hinted, economy = model.economy } model.history
         ]

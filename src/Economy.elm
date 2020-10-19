@@ -8,6 +8,7 @@ The `Population` consumes capital and services (`Economy.distribute`).
 
 -}
 
+import Capital exposing (Capital)
 import Housing exposing (Housing)
 import Job exposing (Job)
 import Person exposing (Person)
@@ -55,11 +56,11 @@ idealStats =
     { happiness = 1.0, health = 1.0 }
 
 
-work : Economy -> Job -> Economy
-work economy job =
+work : Capital -> Economy -> Job -> Capital
+work existingCapital economy job =
     let
         capital =
-            Job.work job
+            Job.work existingCapital job
     in
     { economy
         | food = economy.food + capital.food
@@ -412,7 +413,7 @@ produce : Population -> Economy -> Economy
 produce people economy =
     List.foldl
         (\person economyWithCapital ->
-            Maybe.map (work economy) person.job
+            Maybe.map (work capital economy) person.job
                 |> Maybe.withDefault economyWithCapital
         )
         economy

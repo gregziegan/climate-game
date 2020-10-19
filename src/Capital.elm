@@ -1,10 +1,18 @@
-module Capital exposing (Capital)
+module Capital exposing (Capital, zero)
 
 import Housing exposing (Housing)
 
 
 type alias Capital =
-    { housing : List Housing
+    { -- raw materials
+      wood : Int
+    , metal : Int
+    , plastic : Int
+    , bricks : Int
+    , glass : Int
+
+    -- usable capital
+    , housing : List Housing
     , hospitalBeds : Int
     , surgeons : Int
     , openPrimaryEnrollment : Int
@@ -14,3 +22,8 @@ type alias Capital =
     , clothing : Int
     , prescriptionDrugs : Int
     }
+
+
+zero : Capital
+zero =
+    Capital 0 0 0 0 0 [] 0 0 0 0 0 0 0 0
