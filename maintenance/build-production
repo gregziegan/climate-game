@@ -1,4 +1,4 @@
 mkdir -p docs/public
 cp src/public/* docs/public/
 cp src/environment/production.html docs/index.html
-elm make --optimize src/Main.elm -- --output=./docs/elm.js
+elm make --optimize --output=./docs/elm.js src/Main.elm
