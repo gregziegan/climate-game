@@ -30,6 +30,8 @@ Contributing doesn't just mean code! Feel free to play test the game and provide
 
 If you're looking for something to work on, look for open issues and assign yourself! Assigning yourself will ensure multiple contributors don't work on the same thing.
 
+Join the [Discord channel](https://discord.gg/Wu9ZK9) to discuss and collaborate!
+
 ### Art
 
 The game needs tons of art! Existing ideas for contribution can be found with the [art label](https://github.com/thebritican/climate-game/labels/art).
