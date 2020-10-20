@@ -1,6 +1,10 @@
 # Climate Game (Actual Name TBD)
 
+![Continuous Integration](https://github.com/thebritican/climate-game/workflows/Continuous%20Integration/badge.svg) ![Code quality](https://github.com/thebritican/climate-game/workflows/Code%20quality/badge.svg)
+
 A game where you're the leader of the "free world". Sign bills with legislators, work with indigenous groups, listen to activists, penalize companies and more to maximize a happy and healthy population. As for the climate... you can't really be healthy or happy in an inhospitable world 🙃.
+
+#### Disclaimer: This game is in early, active development. It's probably pretty broken.
 
 [Play now!](http://gregziegan.com/climate-game)
 
