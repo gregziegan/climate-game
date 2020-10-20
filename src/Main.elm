@@ -14,6 +14,7 @@ import History exposing (Datum, History)
 import Housing exposing (Location(..))
 import Html exposing (Html)
 import Job exposing (Title(..))
+import Json.Decode as Decode exposing (Decoder, Value)
 import List
 import NarrativeEngine.Core.Rules as Rules
 import NarrativeEngine.Core.WorldModel as WorldModel
@@ -261,7 +262,7 @@ type alias Model =
     , date : Date
     , hinted : List Datum
     , history : History
-    , debug : NarrativeEngine.Debug.State
+    , debug : Maybe NarrativeEngine.Debug.State
     }
 
 
@@ -270,25 +271,32 @@ type alias InitialWorld =
     , population : Maybe Population
     , time : Maybe Posix
     , worldModel : MyWorldModel
+    , debugMode : Bool
     }
 
 
 type Page
     = Initializing InitialWorld
+    | FailedToBoot
     | Ready Model
 
 
 {-| This gets called from `main` with the fully parsed initial world model passed in.
 -}
-initialPage : MyWorldModel -> ( Page, Cmd Msg )
-initialPage initialWorldModel =
-    ( Initializing { economy = Nothing, population = Nothing, time = Nothing, worldModel = initialWorldModel }
-    , Cmd.batch [ Task.perform InitialTime Time.now, Random.generate RandomStart generateStart ]
-    )
+initialPage : Result Decode.Error Flags -> MyWorldModel -> ( Page, Cmd Msg )
+initialPage potentialFlags initialWorldModel =
+    case potentialFlags of
+        Ok flags ->
+            ( Initializing { economy = Nothing, population = Nothing, time = Nothing, worldModel = initialWorldModel, debugMode = flags.debug }
+            , Cmd.batch [ Task.perform InitialTime Time.now, Random.generate RandomStart generateStart ]
+            )
+
+        Err _ ->
+            ( FailedToBoot, Cmd.none )
 
 
-initialModel : Posix -> Economy -> Population -> MyWorldModel -> Model
-initialModel time economy population worldModel =
+initialModel : Bool -> Posix -> Economy -> Population -> MyWorldModel -> Model
+initialModel debugMode time economy population worldModel =
     { worldModel = worldModel
     , story = "You're a democratically elected president: do the work to give your people happy and healthy lives."
     , ruleCounts = Dict.empty
@@ -300,7 +308,12 @@ initialModel time economy population worldModel =
     , date = Calendar.fromPosix time
     , hinted = []
     , history = History.init time economy
-    , debug = NarrativeEngine.Debug.init
+    , debug =
+        if debugMode then
+            Just NarrativeEngine.Debug.init
+
+        else
+            Nothing
     }
 
 
@@ -403,8 +416,7 @@ updateGame rules msg ({ economy } as model) =
                         , ruleCounts = Dict.update matchedRuleID (Maybe.map ((+) 1) >> Maybe.withDefault 1 >> Just) model.ruleCounts
                         , debug =
                             model.debug
-                                |> NarrativeEngine.Debug.setLastMatchedRuleId matchedRuleID
-                                |> NarrativeEngine.Debug.setLastInteractionId trigger
+                                |> Maybe.map (NarrativeEngine.Debug.setLastMatchedRuleId matchedRuleID << NarrativeEngine.Debug.setLastInteractionId trigger)
                       }
                     , Cmd.none
                     )
@@ -417,14 +429,13 @@ updateGame rules msg ({ economy } as model) =
                         , ruleCounts = Dict.update trigger (Maybe.map ((+) 1) >> Maybe.withDefault 1 >> Just) model.ruleCounts
                         , debug =
                             model.debug
-                                |> NarrativeEngine.Debug.setLastMatchedRuleId trigger
-                                |> NarrativeEngine.Debug.setLastInteractionId trigger
+                                |> Maybe.map (NarrativeEngine.Debug.setLastMatchedRuleId trigger << NarrativeEngine.Debug.setLastInteractionId trigger)
                       }
                     , Cmd.none
                     )
 
         UpdateDebugSearchText searchText ->
-            ( { model | debug = NarrativeEngine.Debug.updateSearch searchText model.debug }, Cmd.none )
+            ( { model | debug = Maybe.map (NarrativeEngine.Debug.updateSearch searchText) model.debug }, Cmd.none )
 
         HarvestFood ->
             ( { model | economy = { economy | food = economy.food + 1 } }, Cmd.none )
@@ -472,6 +483,9 @@ The fully parsed `Rules` get passed in from `main`.
 update : Rules -> Msg -> Page -> ( Page, Cmd Msg )
 update rules msg page =
     case page of
+        FailedToBoot ->
+            ( FailedToBoot, Cmd.none )
+
         Initializing initialWorld ->
             let
                 world =
@@ -485,7 +499,7 @@ update rules msg page =
                     in
                     case world.time of
                         Just time ->
-                            ( Ready (initialModel time economy population world.worldModel), Cmd.none )
+                            ( Ready (initialModel world.debugMode time economy population world.worldModel), Cmd.none )
 
                         Nothing ->
                             ( Initializing world, Cmd.none )
@@ -736,16 +750,23 @@ view model =
     in
     Element.layout [ centerX, width (fillPortion 3) ]
         (column [ spacing 10 ]
-            [ html (NarrativeEngine.Debug.debugBar UpdateDebugSearchText model.worldModel model.debug)
-            , paragraph [ heading 1 ] [ text ("You are currently located in the " ++ getName currentLocation model.worldModel) ]
-            , paragraph [ heading 2 ] [ text <| getDescription (makeConfig currentLocation currentLocation model) currentLocation model.worldModel ]
-            , row [ spacing 10 ]
-                [ choiceColumn model
-                , storyColumn model
-                ]
-            , clickerGame model
-            , gameStats model
-            ]
+            ((case model.debug of
+                Just debugState ->
+                    [ html (NarrativeEngine.Debug.debugBar UpdateDebugSearchText model.worldModel debugState) ]
+
+                Nothing ->
+                    []
+             )
+                ++ [ paragraph [ heading 1 ] [ text ("You are currently located in the " ++ getName currentLocation model.worldModel) ]
+                   , paragraph [ heading 2 ] [ text <| getDescription (makeConfig currentLocation currentLocation model) currentLocation model.worldModel ]
+                   , row [ spacing 10 ]
+                        [ choiceColumn model
+                        , storyColumn model
+                        ]
+                   , clickerGame model
+                   , gameStats model
+                   ]
+            )
         )
 
 
@@ -762,6 +783,9 @@ second =
 subscriptions : Page -> Sub Msg
 subscriptions page =
     case page of
+        FailedToBoot ->
+            Sub.none
+
         Initializing _ ->
             Sub.none
 
@@ -774,6 +798,9 @@ subscriptions page =
 viewPage : Result SyntaxHelpers.ParseErrors a -> Page -> Browser.Document Msg
 viewPage parsedData page =
     case page of
+        FailedToBoot ->
+            { title = "Failed to boot", body = [ Html.text "Failed to boot game." ] }
+
         Initializing _ ->
             { title = "Game Initializing", body = [ Html.text "Loading..." ] }
 
@@ -791,7 +818,20 @@ viewPage parsedData page =
             }
 
 
-main : Program () Page Msg
+type alias Flags =
+    { debug : Bool }
+
+
+decodeFlags : Decoder Flags
+decodeFlags =
+    Decode.map Flags
+        (Decode.field
+            "debug"
+            Decode.bool
+        )
+
+
+main : Program Value Page Msg
 main =
     let
         addExtraEntityFields { name, description } { tags, stats, links } =
@@ -813,11 +853,11 @@ main =
     in
     Browser.document
         { init =
-            \_ ->
+            \flags ->
                 parsedData
                     |> Result.map Tuple.first
                     |> Result.withDefault Dict.empty
-                    |> initialPage
+                    |> initialPage (Decode.decodeValue decodeFlags flags)
         , view = viewPage parsedData
         , update =
             parsedData

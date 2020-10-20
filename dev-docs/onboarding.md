@@ -8,9 +8,29 @@ npm install
 
 ## Hot Reloading
 
-Run `elm reactor`
+Run `npm start`
 
-Open at http://localhost:8000/src/Main.elm
+Open at http://localhost:8000/index.html
+
+## Debugging
+
+Run `npm run debug`
+
+Open at http://localhost:8000/index.html
+
+Use the time-travel debugger on the bottom right corner.
+
+## Deployment
+
+Any push to `main` triggers the [CI workflow](.github/workflows/ci.yml) where the game is deployed if
+unit tests pass.
+
+### Staging
+
+If you'd like to share something you're working on with another developer, feel free to run the
+["Deploy To Staging" workflow](https://github.com/thebritican/climate-game/actions?query=workflow%3A%22Deploy+To+Staging%22) at any time, for any git ref.
+
+This will deploy a more debuggable application to the [staging environment](https://silly-nightingale-661058.netlify.app/) on Netlify.
 
 ## Development Area: Decision Screen
 

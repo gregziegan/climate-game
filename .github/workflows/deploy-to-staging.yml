@@ -25,7 +25,7 @@ jobs:
 
           git config user.name "Staging Release Bot"
           git config user.email "not.real@example.com"
-          cp -r src/public/ docs/public
+          ./maintenance/build-staging
           git add -f docs
           git commit -m "Build application for $REF"
 

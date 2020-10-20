@@ -1,4 +1,4 @@
 mkdir -p docs/public
 cp src/public/* docs/public/
 cp src/environment/staging.html docs/index.html
-elm-live src/Main.elm --dir=./docs -- --debug --output=./docs/elm.js
+elm make --debug src/Main.elm -- --output=./docs/elm.js
