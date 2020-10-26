@@ -40,6 +40,10 @@ The game needs tons of art! Existing ideas for contribution can be found with th
 
 Please [upload assets here](https://github.com/thebritican/climate-game/upload/main/src/public).
 
+![upload instructions](https://user-images.githubusercontent.com/3099999/97197513-bcbf4500-177b-11eb-9913-09f1b485cc0a.png)
+
+Please refer to above image for these numbered steps:
+
 1. Drag and drop or click the blue link in this box to upload one or many files
 2. Add a meaningful title to what you're uploading. Example: "Add drawing of politician"
 3. Select the second option "Create a new branch" (what's in the text field doesn't matter).
