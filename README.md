@@ -36,26 +36,14 @@ Join the [Discord channel](https://discord.gg/Wu9ZK9) to discuss and collaborate
 
 The game needs tons of art! Existing ideas for contribution can be found with the [art label](https://github.com/thebritican/climate-game/labels/art).
 
-Please [upload assets here](https://github.com/thebritican/climate-game/upload/main/src/public).
-
 #### Upload Instructions
+
+Please [upload assets here](https://github.com/thebritican/climate-game/upload/main/src/public).
 
 1. Drag and drop or click the blue link in this box to upload one or many files
 2. Add a meaningful title to what you're uploading. Example: "Add drawing of politician"
 3. Select the second option "Create a new branch" (what's in the text field doesn't matter).
 4. Click the "Propose changes" button!
-
-#### Decision Screen
-
-* Location backdrops
-* Character design (portraits of the folks you talk to)
-* Bills, pens, and othe political props
-
-#### Clicker Economy
-
-* An animated earth that demonstrates the state of the climate
-* Character design for different jobs (farmer, doctor, etc)
-* Schools to click on for training people
 
 ### Writing
 
