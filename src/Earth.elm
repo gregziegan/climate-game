@@ -5,12 +5,10 @@ import Element.Background as Background
 import Element.Input exposing (button)
 
 
+{-| Parts Per Million
+-}
 type alias PPM =
-    Int
-
-
-
--- Parts Per Million
+    Float
 
 
 type alias Earth =
