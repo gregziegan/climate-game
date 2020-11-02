@@ -27,6 +27,7 @@ Aliyah: [INTO MEGAPHONE] President ..., we need help now! My family and friends 
 President:
 
 A1: How can I help?
+
 B1: What needs to be done?
 
 Aliyah: The <insert-name> coal plant must be shut down!
@@ -34,6 +35,7 @@ Aliyah: The <insert-name> coal plant must be shut down!
 President:
 
 A2: Why?
+
 B2: Many people in your city work at ... coal plant. What would they do instead?
 
 If A2:
@@ -47,7 +49,9 @@ Aliyah: They can work at a new plant. We can use solar or wind energy!
 President:
 
 A3: Please write to your representative. I need to go! (Decision 1)
+
 B3: I will ask the plant owners to change the power source.
+
 C3: I am signing a bill today that gives your city new trains. Maybe we can move your neighborhood away from the coal plant? (Decision 4)
 
 If A3: end conversation with another statement from Aliyah of frustration
@@ -59,6 +63,7 @@ Aliyah: How?
 President:
 
 A4: They will lose money to higher taxes if they do not change to cleaner power. (Decision 2)
+
 B4: We will give them money to change how they make power. (Decision 3)
 
 If C3:
