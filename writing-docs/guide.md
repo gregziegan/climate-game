@@ -12,7 +12,7 @@ Read about [climate change mitigation techniques](https://en.wikipedia.org/wiki/
 
 ### Feedback
 
-From here, you can start writing immediately or seek early feedback on your idea! Feel free to join the [Discord channel](https://discord.gg/Wu9ZK9) to chat about the idea. If you'd rather chat via longer messages like email, we'd prefer it to happen on our Issues tab. [Follow this link](/issues/new?assignees=&labels=script&template=script-idea.md&title=) to propose your early idea! Contributors will then read and comment on your submission.
+From here, you can start writing immediately or seek early feedback on your idea! Feel free to join the [Discord channel](https://discord.gg/Wu9ZK9) to chat about the idea. If you'd rather chat via longer messages like email, we'd prefer it to happen on our Issues tab. [Follow this link](https://github.com/thebritican/climate-game/issues/new?assignees=&labels=script&template=script-idea.md&title=) to propose your early idea! Contributors will then read and comment on your submission.
 
 ## Characters
 
@@ -37,4 +37,4 @@ Browse this [example script](./example-script.md). This will be updated as we ge
 
 ## Submit
 
-Ready to write a script or upload one that's ready for review? Submit an issue using the [Script template](/issues/new?assignees=&labels=script&template=script.md&title=)
+Ready to write a script or upload one that's ready for review? Submit an issue using the [Script template](https://github.com/thebritican/climate-game/issues/new?assignees=&labels=script&template=script.md&title=)

@@ -57,7 +57,7 @@ Please refer to above image for these numbered steps:
 
 ### Writing
 
-The more unique and meaningful interactions with other characters, the more interesting the game will become. If you're interested in writing for an original or existing character, please [make an issue and propose your ideas](/issues/new?assignees=&labels=script&template=script-idea.md&title=).
+The more unique and meaningful interactions with other characters, the more interesting the game will become. If you're interested in writing for an original or existing character, please [make an issue and propose your ideas](https://github.com/thebritican/climate-game/issues/new?assignees=&labels=script&template=script-idea.md&title=).
 New and existing ideas can be found under the [script label](https://github.com/thebritican/climate-game/labels/script)
 
 If you're a first-time contributor, check out the [writing guide](./writing-docs/guide.md)!
