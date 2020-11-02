@@ -34,3 +34,7 @@ Our first audience is actually K-4. This offers the writer a unique challenge! Y
 ## Example
 
 Browse this [example script](./example-script.md). This will be updated as we get better script writers!
+
+## Submit
+
+Ready to write a script or upload one that's ready for review? Submit an issue using the [Script template](/issues/new?assignees=&labels=script&template=script.md&title=)
